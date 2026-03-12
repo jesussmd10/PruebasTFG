@@ -1,12 +1,12 @@
 using UnityEngine;
 using Whisper;
-
+using UnityEngine.InputSystem;
 public class OidosDetective : MonoBehaviour
 {
     public WhisperManager whisper;
     public RespuestaIA cerebro;
-    public KeyCode teclaHablar = KeyCode.Space;
-
+    public InputActionReference botonHablarVR;
+    private int posicionInicio;
     [Header("Configuración de Grito")]
     [Tooltip("Si el volumen supera este número, es un grito.")]
     [Range(0.01f, 1f)] 
@@ -20,10 +20,9 @@ public class OidosDetective : MonoBehaviour
 
     private void Start()
     {
-        
         foreach (var device in Microphone.devices)
         {
-            if (device.Contains("Auriculares") || device.Contains("Microphone Array")) 
+            if (device.Contains("Oculus") || device.Contains("Microphone Array"))
             {
                 microfonoActual = device;
                 break;
@@ -34,50 +33,68 @@ public class OidosDetective : MonoBehaviour
             microfonoActual = Microphone.devices[0];
         }
         Debug.Log("MICRÓFONO: " + microfonoActual);
+
+        
+        // Así nunca se apaga y evitamos el tirón al pulsar el gatillo.
+        clipGrabado = Microphone.Start(microfonoActual, true, 3599, 16000);
     }
 
     private void Update()
     {
-        if (Input.GetKeyDown(teclaHablar) && !grabando) ComenzarGrabacion();
-        if (Input.GetKeyUp(teclaHablar) && grabando) TerminarGrabacion();
-    }
+        // Si pulsamos el botón del mando VR y no estamos grabando
+        if (botonHablarVR.action.WasPressedThisFrame() && !grabando)
+        {
+            ComenzarGrabacion();
+        }
 
+        // Si soltamos el botón del mando VR y estamos grabando
+        if (botonHablarVR.action.WasReleasedThisFrame() && grabando)
+        {
+            TerminarGrabacion();
+        }
+    }
     void ComenzarGrabacion()
     {
         grabando = true;
-        clipGrabado = Microphone.Start(microfonoActual, false, 10, 16000);
+        // Solo anotamos en qué "punto" empezamos a hablar
+        posicionInicio = Microphone.GetPosition(microfonoActual);
         Debug.Log("Grabando...");
     }
 
     async void TerminarGrabacion()
     {
         grabando = false;
-        Microphone.End(microfonoActual);
+        int posicionFinal = Microphone.GetPosition(microfonoActual);
         Debug.Log("Procesando...");
 
-        // ELEGIR ALGORITMO
-        float volumenDetectado = 0f;
-        if (usarMetodoPico)
-        {
-            volumenDetectado = CalcularVolumenPico(clipGrabado);
-        }
-        else
-        {
-            volumenDetectado = CalcularVolumenRMS(clipGrabado);
-        }
+        // Rescatamos medio segundo antes de pulsar el botón (8000 muestras a 16kHz)
+        // Usamos Mathf.Max para no salirnos del principio del audio
+        int inicioSeguro = Mathf.Max(0, posicionInicio - 8000);
+        int cantidadMuestras = posicionFinal - inicioSeguro;
 
-        
+        // Si pulsas y sueltas súper rápido, ignoramos para no crashear
+        if (cantidadMuestras <= 0) return;
+
+        float[] muestrasRecortadas = new float[cantidadMuestras];
+        clipGrabado.GetData(muestrasRecortadas, inicioSeguro);
+
+        // Creamos el clip exactamente con lo que has hablado
+        AudioClip clipRecortado = AudioClip.Create("VozLimpia", cantidadMuestras, 1, 16000, false);
+        clipRecortado.SetData(muestrasRecortadas, 0);
+
+        // Detectar si gritas (ahora con el volumen real, sin distorsionar)
+        float volumenDetectado = usarMetodoPico ? CalcularVolumenPico(clipRecortado) : CalcularVolumenRMS(clipRecortado);
         bool estaGritando = volumenDetectado > umbralGrito;
 
-        // Muestra colores en la consola para verlo fácil
         string colorLog = estaGritando ? "<color=red>GRITO</color>" : "<color=green>NORMAL</color>";
         Debug.Log($" Volumen: {volumenDetectado.ToString("F4")} | Umbral: {umbralGrito} | Resultado: {colorLog}");
 
-        var resultado = await whisper.GetTextAsync(clipGrabado);
+        // Enviamos el audio limpio a Whisper
+        var resultado = await whisper.GetTextAsync(clipRecortado);
+        Debug.Log($"<color=cyan>Whisper entendió:</color> {resultado.Result}");
+
         cerebro.ProcesarInterrogatorio(resultado.Result, estaGritando);
     }
-
-    
 
     // Opción A: RMS (Promedio de energía)
     float CalcularVolumenRMS(AudioClip clip)

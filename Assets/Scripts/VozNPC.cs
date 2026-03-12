@@ -9,7 +9,7 @@ public class VozNPC : MonoBehaviour
     public AudioSource garganta;
     
     
-    private string apiKey = "API_KEY_AQUI"; 
+    private string apiKey = "0f4d01eb7b2cf29c590a32b6d4f031b721f684b194a5ca0f39131cece6270072"; 
     
   
     private string voiceId = "2EiwWnXFnvU5JabPnv8n"; // Voz en español de Alex
