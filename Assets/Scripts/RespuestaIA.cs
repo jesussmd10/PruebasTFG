@@ -12,48 +12,53 @@ public class RespuestaIA : MonoBehaviour
     public CuerpoSospechoso cuerpoAlex;
 
     private string url = "http://localhost:1234/v1/chat/completions";
-    private string nombreModelo = "gemma-2-2b-it"; 
+    private string nombreModelo = "gemma-2-2b-it";
 
-    // ESTA ES LA MEMORIA DE LA CONVERSACIÓN
-    private List<object> historialDialogo = new List<object>(); 
+    private List<object> historialDialogo = new List<object>();
     private bool memoriaIniciada = false;
+
+    // --- EL GAMEMANAGER LLAMA A ESTO AL EMPEZAR ---
+    public void ConfigurarPersonalidadInicial(bool esCulpable)
+    {
+        string promptInicial = "Eres Alex, un sospechoso en una sala de interrogatorios. Estás muy nervioso. Responde frases cortas. Usa acciones entre asteriscos como *tiembla* o *nervioso* para expresar emociones. ";
+
+        if (esCulpable)
+        {
+            promptInicial += "ERES CULPABLE. Robaste la joyería, pero debes mentir e inventarte excusas para que no te pillen. Si el detective te grita, te pondrás muy nervioso y podrías cometer un error. ";
+        }
+        else
+        {
+            promptInicial += "ERES INOCENTE. Estabas en el cine a la hora del robo viendo 'Dune', pero estás aterrado de que te metan en la cárcel por error. Defiende tu inocencia. ";
+        }
+
+        promptInicial += "REGLA SECRETA: Si durante el interrogatorio el detective te pilla en una mentira, revelas una pista clave, o un nombre importante, añade EXACTAMENTE la palabra [PISTA] al final de tu respuesta.";
+
+        historialDialogo.Add(new { role = "system", content = promptInicial });
+        memoriaIniciada = true;
+    }
 
     public async void ProcesarInterrogatorio(string textoUsuario, bool usuarioGrita)
     {
+        if (!memoriaIniciada) return; // Esperamos a que el GameManager configure la IA
+
         Debug.Log($"VOZ: '{textoUsuario}' |  GRITANDO: {usuarioGrita}");
 
-        // INICIAR MEMORIA SI ES LA PRIMERA VEZ
-        if (!memoriaIniciada)
-        {
-            string promptInicial = "Eres Alex, un sospechoso de robo inocente pero muy miedoso. " +
-                                   "Tu coartada es que estabas en el cine viendo 'Dune'. " +
-                                   "Usa acciones entre asteriscos como *tiembla* o *nervioso* para expresar emociones. " +
-                                   "Responde frases cortas.";
-            
-            // Añadimos el Prompt del sistema a la memoria
-            historialDialogo.Add(new { role = "system", content = promptInicial });
-            memoriaIniciada = true;
-        }
-
-        // AÑADIR EFECTO DE GRITO DEL USUARIO SI ES NECESARIO
         if (usuarioGrita)
         {
             historialDialogo.Add(new { role = "system", content = "(El detective te acaba de GRITAR. Asústate mucho, tartamudea y tiembla)" });
         }
 
-        // AÑADIR PREGUNTA DEL USUARIO A LA MEMORIA
         historialDialogo.Add(new { role = "user", content = textoUsuario });
 
-        // PREPARAR DATOS PARA ENVIAR (Enviamos TODA la lista)
         var datos = new
         {
             model = nombreModelo,
-            messages = historialDialogo, // Enviamos todo el historial
+            messages = historialDialogo,
             temperature = 0.7f
         };
 
         string jsonBody = JsonConvert.SerializeObject(datos);
-        
+
         using (UnityWebRequest request = new UnityWebRequest(url, "POST"))
         {
             byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonBody);
@@ -71,15 +76,22 @@ public class RespuestaIA : MonoBehaviour
 
                 Debug.Log("RAW: " + textoBruto);
 
-                // GUARDAR LA RESPUESTA DE ALEX EN LA MEMORIA (Para que recuerde lo que dijo él mismo)
-                historialDialogo.Add(new { role = "assistant", content = textoBruto });
+                // --- DETECTAR SI LA IA NOS HA DADO UNA PISTA ---
+                if (textoBruto.Contains("[PISTA]"))
+                {
+                    GameManager gm = FindObjectOfType<GameManager>();
+                    if (gm != null) gm.AñadirPista("El sospechoso se ha contradicho o ha revelado un dato clave.");
 
-                // Procesar actuación y voz
+                    // Borramos la palabra para que ElevenLabs no la lea en voz alta
+                    textoBruto = textoBruto.Replace("[PISTA]", "");
+                }
+
+                historialDialogo.Add(new { role = "assistant", content = textoBruto });
                 AnalizarYAnimar(textoBruto);
 
-                string textoLimpio = Regex.Replace(textoBruto, @"\*.*?\*", ""); 
+                string textoLimpio = Regex.Replace(textoBruto, @"\*.*?\*", "");
                 textoLimpio = Regex.Replace(textoLimpio, @"\(.*?\)", "").Trim();
-                
+
                 if (sistemaDeVoz != null) sistemaDeVoz.DiLaFrase(textoLimpio);
             }
             else
@@ -89,13 +101,11 @@ public class RespuestaIA : MonoBehaviour
         }
     }
 
- void AnalizarYAnimar(string textoCompleto)
+    void AnalizarYAnimar(string textoCompleto)
     {
         if (cuerpoAlex == null) return;
-        
         string textoLow = textoCompleto.ToLower();
 
-        
         if (textoLow.Contains("tiembla") || textoLow.Contains("miedo") || textoLow.Contains("nervioso"))
         {
             cuerpoAlex.PonerNervioso();
@@ -105,7 +115,6 @@ public class RespuestaIA : MonoBehaviour
             cuerpoAlex.Calmar();
         }
 
-        
         cuerpoAlex.GestosHablar();
     }
 
