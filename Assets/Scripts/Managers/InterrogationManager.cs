@@ -9,11 +9,60 @@ public class InterrogationManager : MonoBehaviour
     [SerializeField] private TMPro.TextMeshProUGUI textoRelojVR;
     [SerializeField] private TMPro.TextMeshProUGUI textoFolioVR;
 
-    private float tiempoRestante;
+    private string contenidoFolio = "";
     private bool juegoActivo = true;
 
     private void Start()
     {
+        // Forzar settings UI por código para sobreescribir errores del Inspector
+        if (textoRelojVR != null)
+        {
+            textoRelojVR.isRightToLeftText = false; // Fix: 04:46 renderizado como 64:40
+            textoRelojVR.alignment = TMPro.TextAlignmentOptions.Center;
+        }
+        
+        if (textoFolioVR != null)
+        {
+            textoFolioVR.isRightToLeftText = false;
+            textoFolioVR.alignment = TMPro.TextAlignmentOptions.TopLeft;
+            
+            // Forzar que el texto SIEMPRE se dibuje, incluso si el recuadro es super pequeño
+            textoFolioVR.overflowMode = TMPro.TextOverflowModes.Overflow;
+            textoFolioVR.enableWordWrapping = true;
+            
+            // Quitar márgenes raros que pudieran estar empujando el texto fuera
+            textoFolioVR.margin = UnityEngine.Vector4.zero;
+            
+            // Forzar color negro opaco (tinta sobre papel)
+            textoFolioVR.color = UnityEngine.Color.black;
+            
+            textoFolioVR.enableAutoSizing = true;
+            textoFolioVR.fontSizeMin = 10;
+            textoFolioVR.fontSizeMax = 50;
+
+            // FIX GIGANTE REAL: El Canvas estaba de pie (escalado mal) en vez de tumbado sobre el papel.
+            Canvas canvas = textoFolioVR.GetComponentInParent<Canvas>();
+            if (canvas != null && canvas.transform.parent != null)
+            {
+                // 1. Tumbar el canvas 90 grados para que el texto esté "impreso" en el papel, no flotando estilo holograma
+                canvas.transform.localEulerAngles = new UnityEngine.Vector3(90, 0, 0);
+
+                // 2. Escalar correctamente. Como el canvas ahora está tumbado, su eje Y recae sobre el eje Z del padre.
+                UnityEngine.Vector3 escalaPadre = canvas.transform.parent.lossyScale;
+                canvas.transform.localScale = new UnityEngine.Vector3(
+                    0.001f / escalaPadre.x,
+                    0.001f / escalaPadre.z, 
+                    1f 
+                );
+
+                // 3. Pegarlo a la superficie (Y=0.51 en el cubo para estar justo encima) y centrarlo
+                canvas.transform.localPosition = new UnityEngine.Vector3(0, 0.51f, 0); 
+                
+                // Centrar el texto en el canvas por si quedó descentrado
+                textoFolioVR.rectTransform.anchoredPosition = UnityEngine.Vector2.zero;
+            }
+        }
+
         // Inicializar el contexto del juego
         bool esCulpable = Random.value > 0.5f;
         GameContext.Instance.ConfigurarCulpabilidad(esCulpable);
@@ -23,7 +72,7 @@ public class InterrogationManager : MonoBehaviour
 
         // Inicializar IA
         dialogueSystem.InicializarPersonalidad(esCulpable);
-        tiempoRestante = GameContext.Instance.TiempoPartida;
+
 
         // Suscribirse a eventos
         EventSystem.OnInterrogacionRecibida.AddListener(ProcesarInterrogacion);
@@ -44,12 +93,11 @@ public class InterrogationManager : MonoBehaviour
     {
         if (!juegoActivo) return;
 
-        tiempoRestante -= Time.deltaTime;
         GameContext.Instance.ReducirTiempo(Time.deltaTime);
 
         // Actualizar reloj
-        int minutos = Mathf.FloorToInt(tiempoRestante / 60);
-        int segundos = Mathf.FloorToInt(tiempoRestante % 60);
+        int minutos = Mathf.FloorToInt(GameContext.Instance.TiempoRestante / 60);
+        int segundos = Mathf.FloorToInt(GameContext.Instance.TiempoRestante % 60);
         textoRelojVR.text = string.Format("{0:00}:{1:00}", minutos, segundos);
     }
 
@@ -66,11 +114,19 @@ public class InterrogationManager : MonoBehaviour
             return;
         }
 
-        // Detectar y procesar pista
-        if (NPCBehavior.TienePista(respuestaIA, "[PISTA]"))
+        // Log de la respuesta completa de la IA para depuración
+        Debug.Log($"🤖 Respuesta IA completa: '{respuestaIA}'");
+
+        // Detectar y procesar pista (case-insensitive)
+        if (respuestaIA.IndexOf("[PISTA]", System.StringComparison.OrdinalIgnoreCase) >= 0)
         {
-            respuestaIA = NPCBehavior.ExtraerPista(respuestaIA, "[PISTA]");
+            Debug.Log("🔍 ¡PISTA DETECTADA en la respuesta!");
+            respuestaIA = respuestaIA.Replace("[PISTA]", "").Replace("[pista]", "").Replace("[Pista]", "").Trim();
             GameContext.Instance.AñadirPista("El sospechoso se ha contradicho o reveló un dato clave.");
+        }
+        else
+        {
+            Debug.Log("🔍 No se detectó [PISTA] en esta respuesta.");
         }
 
         // Emitir evento para que otros sistemas procesen
@@ -105,7 +161,13 @@ public class InterrogationManager : MonoBehaviour
     {
         if (textoFolioVR != null)
         {
-            textoFolioVR.text = "<b>CASO: 042 - ROBO</b>\nSospechoso: Alex\n\n" + textoExtra;
+            contenidoFolio += textoExtra;
+            textoFolioVR.text = "<b>CASO: 042 - ROBO</b>\nSospechoso: Alex\n\n" + contenidoFolio;
+            Debug.Log($"📋 Folio actualizado. Texto añadido: '{textoExtra}'");
+        }
+        else
+        {
+            Debug.LogError("❌ textoFolioVR NO está asignado en el Inspector. El folio no se puede actualizar.");
         }
     }
 }

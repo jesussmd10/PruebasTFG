@@ -37,7 +37,7 @@ public class DialogueSystem : MonoBehaviour
             prompt += iaConfig.promptInocente;
         }
 
-        prompt += $"\nREGLA SECRETA: Si revelas pista importante, añade EXACTAMENTE: {iaConfig.tagPista}";
+        prompt += $"\n\nREGLA OBLIGATORIA: Cuando te contradices, revelas información clave, o dices algo sospechoso, DEBES añadir el tag {iaConfig.tagPista} al FINAL de tu respuesta. Ejemplo: 'Yo... yo no estuve ahí... bueno, sí estuve pero solo pasaba por ahí. {iaConfig.tagPista}'. Haz esto con frecuencia si eres culpable.";
 
         historialDialogo.Clear();
         historialDialogo.Add(new { role = "system", content = prompt });

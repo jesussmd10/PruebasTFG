@@ -2,6 +2,7 @@ using UnityEngine;
 using Whisper;
 using UnityEngine.InputSystem;
 using System.Threading.Tasks;
+using System.Collections;
 
 
 public class InterrogationController : MonoBehaviour
@@ -42,29 +43,104 @@ public class InterrogationController : MonoBehaviour
         }
     }
 
+    // Palabras clave de micrófonos de gafas VR conocidos
+    private readonly string[] palabrasClaveVR = new string[]
+    {
+        "Quest",           // Meta Quest 2 / 3 / Pro
+        "Oculus",          // Oculus Rift / Rift S
+        "Headset Microphone", // Genérico VR
+        "Microphone Array", // Quest Link
+        "HMD Mic",         // Algunos HMD
+        "Vive",            // HTC Vive
+        "Pico",            // Pico Neo / Pico 4
+        "Index",           // Valve Index
+        "WMR",             // Windows Mixed Reality
+    };
+
+    private bool microfonoVREncontrado = false;
+
     private void InicializarMicrófono()
     {
-        // Primero: intentar encontrar micrófono de gafas VR
-        foreach (var device in Microphone.devices)
+        // Listar TODOS los micrófonos disponibles para depuración
+        Debug.Log("🎤 Micrófonos disponibles (" + Microphone.devices.Length + "):");
+        for (int i = 0; i < Microphone.devices.Length; i++)
         {
-            if ( device.Contains("Microphone Array"))
+            Debug.Log($"   [{i}] \"{Microphone.devices[i]}\"");
+        }
+
+        // Buscar micrófono VR entre los dispositivos disponibles
+        microfonoVREncontrado = BuscarMicrofonoVR();
+
+        // Fallback: Si no hay VR, usar primer micrófono disponible
+        if (!microfonoVREncontrado)
+        {
+            if (Microphone.devices.Length > 0)
             {
-                microfonoActual = device;
-                Debug.Log("✅ Micrófono VR encontrado: " + microfonoActual);
-                break;
+                microfonoActual = Microphone.devices[0];
+                Debug.Log("⚠️ Micrófono VR no encontrado. Usando fallback: " + microfonoActual);
+                // Seguir buscando el micrófono VR por si se conecta después
+                StartCoroutine(ReintentarBusquedaVR());
+            }
+            else
+            {
+                Debug.LogError("❌ No hay ningún micrófono disponible");
+                StartCoroutine(ReintentarBusquedaVR());
+                return;
             }
         }
 
-        // Fallback: Si no hay VR, usar primer micrófono disponible (portátil)
-        if (string.IsNullOrEmpty(microfonoActual) && Microphone.devices.Length > 0)
-        {
-            microfonoActual = Microphone.devices[0];
-            Debug.Log("⚠️ Micrófono VR no encontrado. Usando portátil: " + microfonoActual);
-        }
+        IniciarGrabacion();
+    }
 
+    /// <summary>
+    /// Busca un micrófono VR entre los dispositivos disponibles
+    /// </summary>
+    private bool BuscarMicrofonoVR()
+    {
+        foreach (var device in Microphone.devices)
+        {
+            foreach (var palabraClave in palabrasClaveVR)
+            {
+                if (device.IndexOf(palabraClave, System.StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    microfonoActual = device;
+                    Debug.Log("✅ Micrófono VR encontrado: " + microfonoActual);
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    /// <summary>
+    /// Reintenta buscar el micrófono VR cada 2 segundos (por si las gafas se conectan tarde)
+    /// </summary>
+    private IEnumerator ReintentarBusquedaVR()
+    {
+        while (!microfonoVREncontrado)
+        {
+            yield return new WaitForSeconds(2f);
+
+            if (BuscarMicrofonoVR())
+            {
+                microfonoVREncontrado = true;
+                Debug.Log("🔄 Micrófono VR detectado tras reintento: " + microfonoActual);
+
+                // Detener la grabación anterior y reiniciar con el micrófono VR
+                if (Microphone.IsRecording(null))
+                {
+                    Microphone.End(null);
+                }
+                IniciarGrabacion();
+            }
+        }
+    }
+
+    private void IniciarGrabacion()
+    {
         if (string.IsNullOrEmpty(microfonoActual))
         {
-            Debug.LogError("❌ No hay micrófono disponible");
+            Debug.LogError("❌ No hay micrófono para iniciar grabación");
             return;
         }
 
