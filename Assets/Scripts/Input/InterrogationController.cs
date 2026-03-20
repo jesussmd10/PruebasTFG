@@ -43,6 +43,21 @@ public class InterrogationController : MonoBehaviour
         }
     }
 
+    private void OnDestroy()
+    {
+        // LIBERAR EL MICRÓFONO AL CAMBIAR O REINICIAR DE ESCENA
+        // Si no se hace, al reiniciar con el botón del final, el micro se queda bloqueado y no detecta voz
+        if (!string.IsNullOrEmpty(microfonoActual) && Microphone.IsRecording(microfonoActual))
+        {
+            Microphone.End(microfonoActual);
+            Debug.Log("🛑 Micrófono liberado correctamente en OnDestroy.");
+        }
+        else if (Microphone.IsRecording(null))
+        {
+            Microphone.End(null);
+        }
+    }
+
     // Palabras clave de micrófonos de gafas VR conocidos
     private readonly string[] palabrasClaveVR = new string[]
     {

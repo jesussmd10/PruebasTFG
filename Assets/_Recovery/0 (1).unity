@@ -2186,7 +2186,7 @@ RectTransform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1086147628}
   m_LocalRotation: {x: -0, y: -0.9999084, z: -0, w: -0.013536856}
-  m_LocalPosition: {x: 0, y: 0, z: -4.77}
+  m_LocalPosition: {x: 0, y: 0, z: -4.76}
   m_LocalScale: {x: 0.001, y: 0.001, z: 0.001}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -2195,7 +2195,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: -181.551, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 0, y: 0}
-  m_AnchoredPosition: {x: -2.96, y: 3.66}
+  m_AnchoredPosition: {x: -2.8, y: 3.59}
   m_SizeDelta: {x: 500, y: 200}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1086147631
@@ -2449,7 +2449,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InterrogationController
   whisper: {fileID: 1994283944}
-  botonHablarVR: {fileID: 83097790271614945, guid: c348712bda248c246b8c49b3db54643f, type: 3}
+  botonHablarVR: {fileID: 7656909618059116887, guid: c348712bda248c246b8c49b3db54643f, type: 3}
   umbralGrito: 0.2
   usarMetodoPico: 1
 --- !u!4 &1220637329 stripped
@@ -3612,7 +3612,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AudioManager
   audioSource: {fileID: 411115387}
-  apiKey: b83f5106273a6a0dc110b1ed90bfee2168aded0e1208b13d470772302bf35ee7
+  apiKey: sk_e473a211d3caf8b1454515f06a2fade6381b8542fb5f08ed
   voiceId: IKne3meq5aSn9XLyUdCD
 --- !u!4 &1548482858
 Transform:
@@ -3878,7 +3878,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 59ff17b4803b7ed47b8ea724d1b81fca, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameContext
-  tiempoPartida: 10
+  tiempoPartida: 200
 --- !u!1001 &1826623567
 PrefabInstance:
   m_ObjectHideFlags: 0

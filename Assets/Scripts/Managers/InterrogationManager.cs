@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using System.Threading.Tasks;
 
 
@@ -9,17 +10,60 @@ public class InterrogationManager : MonoBehaviour
     [SerializeField] private TMPro.TextMeshProUGUI textoRelojVR;
     [SerializeField] private TMPro.TextMeshProUGUI textoFolioVR;
 
+    [Header("UI Veredicto Final")]
+    [SerializeField] private GameObject panelVeredicto;
+    [SerializeField] private GameObject botonesEleccion;
+    [SerializeField] private GameObject botonReinicio;
+    [SerializeField] private TMPro.TextMeshProUGUI textoResultadoVeredicto;
+
     private string contenidoFolio = "";
     private bool juegoActivo = true;
 
     private void Start()
     {
+
+
+        // Ocultar panel de veredicto si existe
+        if (panelVeredicto != null) panelVeredicto.SetActive(false);
+
         // Forzar settings UI por código para sobreescribir errores del Inspector
         if (textoRelojVR != null)
         {
             textoRelojVR.isRightToLeftText = false; // Fix: 04:46 renderizado como 64:40
             textoRelojVR.alignment = TMPro.TextAlignmentOptions.Center;
         }
+
+        // --- FIX PANEL VEREDICTO FINAL ---
+        if (textoResultadoVeredicto != null)
+        {
+            // Evitar que el texto se dibuje al revés en VR y asegurar que procese colores HTML
+            textoResultadoVeredicto.isRightToLeftText = false;
+            textoResultadoVeredicto.alignment = TMPro.TextAlignmentOptions.Center;
+            textoResultadoVeredicto.richText = true;
+            // Desactivar el word wrapping forzará a que no se divida en saltos de línea extraños por la caja estrecha
+            textoResultadoVeredicto.enableWordWrapping = false;
+            textoResultadoVeredicto.overflowMode = TMPro.TextOverflowModes.Overflow;
+        }
+
+        if (panelVeredicto != null)
+        {
+            // Si olvidaron asignar el botón de reinicio en el Inspector, buscarlo automáticamente
+            if (botonReinicio == null)
+            {
+                UnityEngine.UI.Button[] btns = panelVeredicto.GetComponentsInChildren<UnityEngine.UI.Button>(true);
+                foreach (var b in btns)
+                {
+                    string nm = b.gameObject.name.ToLower();
+                    if (nm.Contains("reinici") || nm.Contains("restart") || nm.Contains("volver"))
+                    {
+                        botonReinicio = b.gameObject;
+                        Debug.Log("✅ Botón de reinicio auto-encontrado: " + b.gameObject.name);
+                        break;
+                    }
+                }
+            }
+        }
+        // ---------------------------------
         
         if (textoFolioVR != null)
         {
@@ -28,7 +72,7 @@ public class InterrogationManager : MonoBehaviour
             
             // Forzar que el texto SIEMPRE se dibuje, incluso si el recuadro es super pequeño
             textoFolioVR.overflowMode = TMPro.TextOverflowModes.Overflow;
-            textoFolioVR.enableWordWrapping = true;
+            textoFolioVR.textWrappingMode = TMPro.TextWrappingModes.Normal;
             
             // Quitar márgenes raros que pudieran estar empujando el texto fuera
             textoFolioVR.margin = UnityEngine.Vector4.zero;
@@ -79,8 +123,10 @@ public class InterrogationManager : MonoBehaviour
         EventSystem.OnInterrogatorioTerminado.AddListener(TerminarJuego);
         EventSystem.OnPistaDescubierta.AddListener(AñadirPistaAlFolio);
 
-        ActualizarFolio("Inicio del interrogatorio.\nMotivo: Robo en la joyería.\n\n");
+        ActualizarFolio($"Inicio del interrogatorio.\nMotivo: {GameContext.Instance.DelitoActual.DescripcionFolio}\n\n");
     }
+
+  
 
     private void OnDisable()
     {
@@ -149,12 +195,89 @@ public class InterrogationManager : MonoBehaviour
     {
         juegoActivo = false;
 
-        string veredicto = GameContext.Instance.EsCulpable 
-            ? "<color=red>¡ERA CULPABLE!</color>" 
-            : "<color=green>¡ERA INOCENTE!</color>";
+        if (panelVeredicto != null)
+        {
+            // Mostrar ventana emergente en vez de escribir solo en el folio
+            panelVeredicto.SetActive(true);
+            if (botonesEleccion != null) botonesEleccion.SetActive(true);
+            if (botonReinicio != null) botonReinicio.SetActive(false);
+            
+            if (textoResultadoVeredicto != null)
+            {
+                textoResultadoVeredicto.text = "¿Cuál es tu veredicto final sobre Alex?";
+            }
+        }
+        else
+        {
+            // Fallback original si no has asignado la UI
+            string veredicto = GameContext.Instance.EsCulpable 
+                ? "<color=red>¡ERA CULPABLE!</color>" 
+                : "<color=green>¡ERA INOCENTE!</color>";
 
-        ActualizarFolio($"\n\n<b>TIEMPO AGOTADO</b>\nLa verdad era: {veredicto}");
-        Debug.Log("🏁 Fin del juego: " + veredicto);
+            ActualizarFolio($"\n\n<b>TIEMPO AGOTADO</b>\nLa verdad era: {veredicto}");
+        }
+        
+        Debug.Log("🏁 Fin del tiempo. Esperando veredicto del jugador...");
+    }
+
+    // --- MÉTODOS PÚBLICOS PARA LOS BOTONES DE LA INTERFAZ ---
+
+    public void ElegirCulpable()
+    {
+        ProcesarVeredictoJugador(true);
+    }
+
+    public void ElegirInocente()
+    {
+        ProcesarVeredictoJugador(false);
+    }
+
+    private void ProcesarVeredictoJugador(bool eligioCulpable)
+    {
+        if (botonesEleccion != null)
+        {
+            // Si el botón está dentro de los botones de elección (y comparten el mismo tamaño/layout),
+            // en vez de desactivar el padre y ocultar todos, simplemente ocultamos los hijos uno a uno, EXCEPTO el botón de reinicio.
+            // Esto previene que se rompa el tamaño (localScale) al haberlo sacado de padre en el fix anterior.
+            if (botonReinicio != null && botonReinicio.transform.parent == botonesEleccion.transform)
+            {
+                foreach (Transform child in botonesEleccion.transform)
+                {
+                    if (child != botonReinicio.transform)
+                    {
+                        child.gameObject.SetActive(false);
+                    }
+                }
+            }
+            else
+            {
+                botonesEleccion.SetActive(false);
+            }
+        }
+
+        if (botonReinicio != null) botonReinicio.SetActive(true);
+
+        bool eraCulpable = GameContext.Instance.EsCulpable;
+        bool acerto = (eligioCulpable == eraCulpable);
+
+        if (textoResultadoVeredicto != null)
+        {
+            if (acerto)
+            {
+                textoResultadoVeredicto.text = "<color=green>¡CASO RESUELTO CORRECTAMENTE!</color>\nFelicidades, has descubierto la verdad.";
+            }
+            else
+            {
+                string laVerdaderaCulpabilidad = eraCulpable ? "Culpable" : "Inocente";
+                textoResultadoVeredicto.text = $"<color=red>¡VEREDICTO INCORRECTO!</color>\nTe has equivocado. El sospechoso era {laVerdaderaCulpabilidad}.";
+            }
+        }
+    }
+
+    public void ReiniciarInterrogatorio()
+    {
+        Debug.Log("🔄 Reiniciando interrogatorio...");
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
     private void ActualizarFolio(string textoExtra)
@@ -162,7 +285,7 @@ public class InterrogationManager : MonoBehaviour
         if (textoFolioVR != null)
         {
             contenidoFolio += textoExtra;
-            textoFolioVR.text = "<b>CASO: 042 - ROBO</b>\nSospechoso: Alex\n\n" + contenidoFolio;
+            textoFolioVR.text = $"<b>CASO: {GameContext.Instance.DelitoActual.ID} - {GameContext.Instance.DelitoActual.TituloFolio}</b>\nSospechoso: Alex\n\n" + contenidoFolio;
             Debug.Log($"📋 Folio actualizado. Texto añadido: '{textoExtra}'");
         }
         else

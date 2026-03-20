@@ -1,4 +1,5 @@
 {
+    "version": 1,
     "name": "XRI Default Input Actions",
     "maps": [
         {
@@ -73,6 +74,15 @@
                     "type": "Value",
                     "id": "73053154-2fbc-4d78-9cac-000282b64f79",
                     "expectedControlType": "Integer",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                },
+                {
+                    "name": "BotonHablar",
+                    "type": "Button",
+                    "id": "7beb7491-b98a-4ec7-ab7c-37ae10e48b80",
+                    "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": true
@@ -320,6 +330,17 @@
                     "action": "Eye Gaze Is Tracked",
                     "isComposite": false,
                     "isPartOfComposite": true
+                },
+                {
+                    "name": "",
+                    "id": "0dc8a82c-99f5-4295-aa46-f8ba672a6e96",
+                    "path": "<XRController>{RightHand}/{SecondaryButton}",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "BotonHablar",
+                    "isComposite": false,
+                    "isPartOfComposite": false
                 }
             ]
         },

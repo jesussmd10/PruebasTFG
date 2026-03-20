@@ -20,30 +20,67 @@ public class DialogueSystem : MonoBehaviour
         }
     }
 
+    private readonly string[] lugaresAleatorios = new string[] 
+    { 
+        "en un bar local tomando algo solo", 
+        "paseando a tu perro por un parque cercano", 
+        "trabajando hasta tarde en tu oficina", 
+        "en casa de un amigo jugando a la consola", 
+        "durmiendo en tu coche tras discutir con tu pareja",
+        "haciendo la compra en el supermercado nocturno",
+        "cenando solo en un restaurante de comida rápida"
+    };
+
+    private readonly string[] actitudesAleatorias = new string[]
+    {
+        "Estás aterrado, tartamudeas mucho y casi lloras.",
+        "Te muestras a la defensiva, un poco borde e indignado de estar allí.",
+        "Intentas hacerte el simpático y usas sarcasmo para ocultar tu enorme nerviosismo.",
+        "Hablas excesivamente rápido, dando detalles inútiles porque entraste en pánico.",
+        "Eres muy tímido, respondes con frases cortísimas y *miras mucho al suelo*."
+    };
+
     /// <summary>
-    /// Inicializa la personalidad de la IA según si es culpable o inocente
+    /// Inicializa la personalidad de la IA según si es culpable o inocente, asignando una coartada aleatoria.
     /// </summary>
     public void InicializarPersonalidad(bool esCulpable)
     {
-        string prompt = "Eres Alex, un sospechoso en una sala de interrogatorios. Muy nervioso. ";
-        prompt += "Responde con frases cortas. Usa *acciones entre asteriscos* para expresar emociones. ";
+        string lugar = lugaresAleatorios[Random.Range(0, lugaresAleatorios.Length)];
+        string actitud = actitudesAleatorias[Random.Range(0, actitudesAleatorias.Length)];
+        var delito = GameContext.Instance.DelitoActual;
+
+        string prompt = $"Eres Alex, principal sospechoso de {delito.DescripcionPrompt}, en la sala de interrogatorios de la comisaría. {actitud} ";
+        prompt += "Responde de forma muy natural, conversacional y fluida. Usa *acciones entre asteriscos* para expresar lenguaje corporal de la actitud descrita. ";
 
         if (esCulpable)
         {
-            prompt += iaConfig.promptCulpable;
+            prompt += $"\n\n¡ERES CULPABLE del crimen! Tu coartada FALSA inventada es que estabas {lugar}. ";
+            prompt += "Tratas de mantener tu mentira con firmeza, pero bajo mucha presión de las preguntas te pones muy nervioso, tu historia tiene huecos, e intentas cambiar de tema o inventar detalles al vuelo vacilando. ";
+            if (iaConfig != null && !string.IsNullOrEmpty(iaConfig.promptCulpable)) 
+                prompt += iaConfig.promptCulpable + " ";
         }
         else
         {
-            prompt += iaConfig.promptInocente;
+            prompt += $"\n\n¡ERES TOTALMENTE INOCENTE! No sabes nada. Tu coartada REAL, verdadera y comprobable es que estabas {lugar}. ";
+            prompt += "Tienes muchísimo miedo de ir a prisión por un terrible error policial. Dices la verdad continuamente, pero los nervios, el agobio y las preguntas capciosas te aterran y te causan estrés extremo. ";
+            if (iaConfig != null && !string.IsNullOrEmpty(iaConfig.promptInocente)) 
+                prompt += iaConfig.promptInocente + " ";
         }
 
-        prompt += $"\n\nREGLA OBLIGATORIA: Cuando te contradices, revelas información clave, o dices algo sospechoso, DEBES añadir el tag {iaConfig.tagPista} al FINAL de tu respuesta. Ejemplo: 'Yo... yo no estuve ahí... bueno, sí estuve pero solo pasaba por ahí. {iaConfig.tagPista}'. Haz esto con frecuencia si eres culpable.";
+        prompt += $"\n\nMUY IMPORTANTE: NUNCA digas que estabas en el cine. Defiende a muerte tu coartada de que estabas: {lugar}. Limítate estrictamente a responder a las acusaciones sobre {delito.DescripcionPrompt} según tu coartada.";
+        prompt += $"\n\nREGLA OBLIGATORIA DEL SISTEMA DE JUEGO: Si te pones nervioso, si el policía te pilla en una mentira, si dudas demasiado de tus palabras o revelas información extraña que suena incriminatoria, DEBES añadir el tag {iaConfig.tagPista} al FINAL de tu respuesta. Ejemplo: 'Yo... yo no estuve ahí... bueno, sí estuve pero no vi nada raro. {iaConfig.tagPista}'. ";
+        
+        if (esCulpable) {
+            prompt += "Como eres culpable y tu coartada es totalmente mentira, generarás estas pistas con frecuencia obligatoriamente cuando el policía detecte huecos en tu historia y te arrincone.";
+        } else {
+            prompt += "Como eres inocente, generarás estas pistas solo por accidente si el pánico te hace tartamudear, decir algo fuera de contexto o contradecirte por el nerviosismo del momento. ¡El miedo te hará parecer sospechoso!";
+        }
 
         historialDialogo.Clear();
         historialDialogo.Add(new { role = "system", content = prompt });
         memoriaIniciada = true;
 
-        Debug.Log(" Personalidad de IA inicializada");
+        Debug.Log($"🤖 Personalidad IA: {(esCulpable ? "Culpable" : "Inocente")} | Coartada: {lugar} | Actitud: {actitud}");
     }
 
     /// <summary>
