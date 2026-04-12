@@ -16,6 +16,7 @@ public static class EventSystem
 public enum EmotionState
 {
     Nervioso,
+    Negando,
     Calmado,
     Hablando
 }

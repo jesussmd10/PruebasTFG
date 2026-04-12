@@ -2449,7 +2449,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InterrogationController
   whisper: {fileID: 1994283944}
-  botonHablarVR: {fileID: 83097790271614945, guid: c348712bda248c246b8c49b3db54643f, type: 3}
+  botonHablarVR: {fileID: 7656909618059116887, guid: c348712bda248c246b8c49b3db54643f, type: 3}
   umbralGrito: 0.2
   usarMetodoPico: 1
 --- !u!4 &1220637329 stripped
@@ -3566,7 +3566,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0dc981cef29c33b4297f65f552b17dd1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DialogueSystem
-  iaConfig: {fileID: 11400000, guid: a059516e0d7ab824c8f65dc15dfdaa99, type: 2}
+  iaConfig: {fileID: 11400000, guid: 25ac357765594f64c9588683591a320c, type: 2}
 --- !u!4 &1545844461
 Transform:
   m_ObjectHideFlags: 0
@@ -3612,8 +3612,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AudioManager
   audioSource: {fileID: 411115387}
-  apiKey: b83f5106273a6a0dc110b1ed90bfee2168aded0e1208b13d470772302bf35ee7
-  voiceId: IKne3meq5aSn9XLyUdCD
+  nombreVoz: es-ES-AlvaroNeural
 --- !u!4 &1548482858
 Transform:
   m_ObjectHideFlags: 0
@@ -3878,7 +3877,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 59ff17b4803b7ed47b8ea724d1b81fca, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameContext
-  tiempoPartida: 10
+  tiempoPartida: 300
 --- !u!1001 &1826623567
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -4598,7 +4597,7 @@ MonoBehaviour:
   modelPath: Whisper/ggml-small.bin
   isModelPathInStreamingAssets: 1
   initOnAwake: 1
-  useGpu: 0
+  useGpu: 1
   flashAttention: 0
   language: es
   translateToEnglish: 0
@@ -4612,7 +4611,7 @@ MonoBehaviour:
   lengthSec: 10
   updatePrompt: 1
   dropOldBuffer: 0
-  useVad: 1
+  useVad: 0
   tokensTimestamps: 0
   audioCtx: 0
 --- !u!4 &1994283945

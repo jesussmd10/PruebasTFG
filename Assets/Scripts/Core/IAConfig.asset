@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: IAConfig
   m_EditorClassIdentifier: Assembly-CSharp::IAConfig
   urlModelo: http://localhost:1234/v1/chat/completions
-  nombreModelo: llama-3.2-3b-instruct
+  nombreModelo: meta-llama-3.1-8b-instruct-abliterated
   temperatura: 0.7
   promptCulpable: "Eres Alex, un sospechoso CULPABLE. Robaste la joyer\xEDa. Debes
     mentir e inventar excusas."

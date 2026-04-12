@@ -16,7 +16,7 @@ public class NPCMovement : MonoBehaviour
 
         if (silla == null)
         {
-            Debug.LogError("❌ Silla no asignada");
+            Debug.LogError(" Silla no asignada");
             return;
         }
 
@@ -51,6 +51,6 @@ public class NPCMovement : MonoBehaviour
             characterAnimator.Sentarse();
         }
 
-        Debug.Log("✅ Llegué. Me siento.");
+        Debug.Log("Llegué. Me siento.");
     }
 }

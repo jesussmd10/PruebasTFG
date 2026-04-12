@@ -1,13 +1,12 @@
 using UnityEngine;
 
-
 public class CharacterAnimator : MonoBehaviour
 {
     [SerializeField] private Animator animador;
+    private EmotionState estadoActual = EmotionState.Calmado;
 
     private void OnEnable()
     {
-       
         EventSystem.OnEmotionChanged.AddListener(CambiarEmocion);
     }
 
@@ -20,30 +19,39 @@ public class CharacterAnimator : MonoBehaviour
     {
         if (animador == null) return;
 
-        switch (emotion)
+       
+        if (emotion == EmotionState.Hablando)
         {
-            case EmotionState.Nervioso:
-                animador.SetTrigger("NERVIOSO");
-                Debug.Log(" Alex se pone nervioso");
-                break;
-
-            case EmotionState.Calmado:
-                animador.SetTrigger("IDLE");
-                Debug.Log("Alex se calma");
-                break;
-
-            case EmotionState.Hablando:
-                animador.SetTrigger("HABLAR");
-                break;
+            animador.SetTrigger("HABLAR");
         }
+        else
+        {
+            
+            animador.ResetTrigger("NERVIOSO");
+            animador.ResetTrigger("IDLE");
+            animador.ResetTrigger("HABLAR");
+            animador.ResetTrigger("NEGACION");
+
+            switch (emotion)
+            {
+                case EmotionState.Nervioso:
+                    animador.SetTrigger("NERVIOSO");
+                    break;
+                case EmotionState.Calmado:
+                    animador.SetTrigger("IDLE");
+                    break;
+                case EmotionState.Negando:
+                    animador.SetTrigger("NEGACION");
+                    Debug.Log("Alex niega con el dedo/cabeza y se prepara para hablar");
+                    break;
+            }
+        }
+        
+        estadoActual = emotion;
     }
 
     public void Sentarse()
     {
-        if (animador != null)
-        {
-            animador.SetTrigger("A_SENTARSE");
-            Debug.Log("Alex se sienta");
-        }
+        if (animador != null) animador.SetTrigger("A_SENTARSE");
     }
 }

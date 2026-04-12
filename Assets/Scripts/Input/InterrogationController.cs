@@ -45,12 +45,10 @@ public class InterrogationController : MonoBehaviour
 
     private void OnDestroy()
     {
-        // LIBERAR EL MICRÓFONO AL CAMBIAR O REINICIAR DE ESCENA
-        // Si no se hace, al reiniciar con el botón del final, el micro se queda bloqueado y no detecta voz
         if (!string.IsNullOrEmpty(microfonoActual) && Microphone.IsRecording(microfonoActual))
         {
             Microphone.End(microfonoActual);
-            Debug.Log("🛑 Micrófono liberado correctamente en OnDestroy.");
+            Debug.Log("Micrófono liberado correctamente en OnDestroy.");
         }
         else if (Microphone.IsRecording(null))
         {
@@ -76,29 +74,25 @@ public class InterrogationController : MonoBehaviour
 
     private void InicializarMicrófono()
     {
-        // Listar TODOS los micrófonos disponibles para depuración
-        Debug.Log("🎤 Micrófonos disponibles (" + Microphone.devices.Length + "):");
+        Debug.Log("Micrófonos disponibles (" + Microphone.devices.Length + "):");
         for (int i = 0; i < Microphone.devices.Length; i++)
         {
             Debug.Log($"   [{i}] \"{Microphone.devices[i]}\"");
         }
 
-        // Buscar micrófono VR entre los dispositivos disponibles
         microfonoVREncontrado = BuscarMicrofonoVR();
 
-        // Fallback: Si no hay VR, usar primer micrófono disponible
         if (!microfonoVREncontrado)
         {
             if (Microphone.devices.Length > 0)
             {
                 microfonoActual = Microphone.devices[0];
-                Debug.Log("⚠️ Micrófono VR no encontrado. Usando fallback: " + microfonoActual);
-                // Seguir buscando el micrófono VR por si se conecta después
+                Debug.Log("Micrófono VR no encontrado. Usando fallback: " + microfonoActual);
                 StartCoroutine(ReintentarBusquedaVR());
             }
             else
             {
-                Debug.LogError("❌ No hay ningún micrófono disponible");
+                Debug.LogError("No hay ningún micrófono disponible");
                 StartCoroutine(ReintentarBusquedaVR());
                 return;
             }
@@ -119,7 +113,7 @@ public class InterrogationController : MonoBehaviour
                 if (device.IndexOf(palabraClave, System.StringComparison.OrdinalIgnoreCase) >= 0)
                 {
                     microfonoActual = device;
-                    Debug.Log("✅ Micrófono VR encontrado: " + microfonoActual);
+                    Debug.Log("Micrófono VR encontrado: " + microfonoActual);
                     return true;
                 }
             }
@@ -139,7 +133,7 @@ public class InterrogationController : MonoBehaviour
             if (BuscarMicrofonoVR())
             {
                 microfonoVREncontrado = true;
-                Debug.Log("🔄 Micrófono VR detectado tras reintento: " + microfonoActual);
+                Debug.Log("Micrófono VR detectado tras reintento: " + microfonoActual);
 
                 // Detener la grabación anterior y reiniciar con el micrófono VR
                 if (Microphone.IsRecording(null))
@@ -155,11 +149,11 @@ public class InterrogationController : MonoBehaviour
     {
         if (string.IsNullOrEmpty(microfonoActual))
         {
-            Debug.LogError("❌ No hay micrófono para iniciar grabación");
+            Debug.LogError("No hay micrófono para iniciar grabación");
             return;
         }
 
-        Debug.Log("🎤 Micrófono activo: " + microfonoActual);
+        Debug.Log("Micrófono activo: " + microfonoActual);
 
         // Grabar continuamente
         clipGrabado = Microphone.Start(microfonoActual, true, 3599, 16000);
@@ -170,7 +164,7 @@ public class InterrogationController : MonoBehaviour
         if (grabando) return;
         grabando = true;
         posicionInicio = Microphone.GetPosition(microfonoActual);
-        Debug.Log("🔴 Grabando...");
+        Debug.Log("Grabando...");
     }
 
     private void TerminarGrabacion(InputAction.CallbackContext context)
@@ -200,7 +194,7 @@ public class InterrogationController : MonoBehaviour
         
         bool estaGritando = volumenDetectado > umbralGrito;
 
-        Debug.Log($"📊 Volumen: {volumenDetectado:F4} | Gritando: {estaGritando}");
+        Debug.Log($"Volumen: {volumenDetectado:F4} | Gritando: {estaGritando}");
 
         // Procesar con Whisper
         ProcesarAudio(clipRecortado, estaGritando);
@@ -209,7 +203,7 @@ public class InterrogationController : MonoBehaviour
     private async void ProcesarAudio(AudioClip clip, bool estaGritando)
     {
         var resultado = await whisper.GetTextAsync(clip);
-        Debug.Log($"🗣️ Transcrito: {resultado.Result}");
+        Debug.Log($"Transcrito: {resultado.Result}");
 
         // Enviar evento para que otros sistemas lo procesen
         EventSystem.OnInterrogacionRecibida.Invoke(resultado.Result, estaGritando);

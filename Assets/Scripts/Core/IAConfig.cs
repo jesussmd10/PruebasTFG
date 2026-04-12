@@ -6,12 +6,12 @@ public class IAConfig : ScriptableObject
 {
     [Header("Modelo")]
     public string urlModelo = "http://localhost:1234/v1/chat/completions";
-    public string nombreModelo = "llama-3.2-3b-instruct";
+    public string nombreModelo = "meta-llama-3.1-8b-instruct-abliterated";
     public float temperatura = 0.7f;
 
     [Header("Personalidad")]
-    public string promptCulpable = "Eres Alex, un sospechoso CULPABLE. Robaste la joyería. Debes mentir e inventar excusas.";
-    public string promptInocente = "Eres Alex, un sospechoso INOCENTE. Estabas en el cine. Defiende tu inocencia.";
+    public string promptCulpable = "Eres Alex, un sospechoso CULPABLE. Debes mentir e inventar excusas.";
+    public string promptInocente = "Eres Alex, un sospechoso INOCENTE. Defiende tu inocencia.";
     
     [Header("Comportamiento")]
     public string tagPista = "[PISTA]";

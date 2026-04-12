@@ -33,7 +33,7 @@ public class InterrogationManager : MonoBehaviour
             textoRelojVR.alignment = TMPro.TextAlignmentOptions.Center;
         }
 
-        // --- FIX PANEL VEREDICTO FINAL ---
+        
         if (textoResultadoVeredicto != null)
         {
             // Evitar que el texto se dibuje al revés en VR y asegurar que procese colores HTML
@@ -47,7 +47,6 @@ public class InterrogationManager : MonoBehaviour
 
         if (panelVeredicto != null)
         {
-            // Si olvidaron asignar el botón de reinicio en el Inspector, buscarlo automáticamente
             if (botonReinicio == null)
             {
                 UnityEngine.UI.Button[] btns = panelVeredicto.GetComponentsInChildren<UnityEngine.UI.Button>(true);
@@ -63,7 +62,6 @@ public class InterrogationManager : MonoBehaviour
                 }
             }
         }
-        // ---------------------------------
         
         if (textoFolioVR != null)
         {
@@ -84,14 +82,10 @@ public class InterrogationManager : MonoBehaviour
             textoFolioVR.fontSizeMin = 10;
             textoFolioVR.fontSizeMax = 50;
 
-            // FIX GIGANTE REAL: El Canvas estaba de pie (escalado mal) en vez de tumbado sobre el papel.
             Canvas canvas = textoFolioVR.GetComponentInParent<Canvas>();
             if (canvas != null && canvas.transform.parent != null)
             {
-                // 1. Tumbar el canvas 90 grados para que el texto esté "impreso" en el papel, no flotando estilo holograma
                 canvas.transform.localEulerAngles = new UnityEngine.Vector3(90, 0, 0);
-
-                // 2. Escalar correctamente. Como el canvas ahora está tumbado, su eje Y recae sobre el eje Z del padre.
                 UnityEngine.Vector3 escalaPadre = canvas.transform.parent.lossyScale;
                 canvas.transform.localScale = new UnityEngine.Vector3(
                     0.001f / escalaPadre.x,
@@ -99,10 +93,8 @@ public class InterrogationManager : MonoBehaviour
                     1f 
                 );
 
-                // 3. Pegarlo a la superficie (Y=0.51 en el cubo para estar justo encima) y centrarlo
                 canvas.transform.localPosition = new UnityEngine.Vector3(0, 0.51f, 0); 
                 
-                // Centrar el texto en el canvas por si quedó descentrado
                 textoFolioVR.rectTransform.anchoredPosition = UnityEngine.Vector2.zero;
             }
         }
@@ -149,7 +141,7 @@ public class InterrogationManager : MonoBehaviour
 
     private async void ProcesarInterrogacion(string textoUsuario, bool usuarioGrita)
     {
-        Debug.Log($"🎤 Usuario: '{textoUsuario}' | Gritando: {usuarioGrita}");
+        Debug.Log($"Usuario: '{textoUsuario}' | Gritando: {usuarioGrita}");
 
         // Obtener respuesta de IA
         string respuestaIA = await dialogueSystem.ObtenerRespuesta(textoUsuario, usuarioGrita);
@@ -161,18 +153,18 @@ public class InterrogationManager : MonoBehaviour
         }
 
         // Log de la respuesta completa de la IA para depuración
-        Debug.Log($"🤖 Respuesta IA completa: '{respuestaIA}'");
+        Debug.Log($"Respuesta IA completa: '{respuestaIA}'");
 
         // Detectar y procesar pista (case-insensitive)
         if (respuestaIA.IndexOf("[PISTA]", System.StringComparison.OrdinalIgnoreCase) >= 0)
         {
-            Debug.Log("🔍 ¡PISTA DETECTADA en la respuesta!");
+            Debug.Log("¡PISTA DETECTADA en la respuesta!");
             respuestaIA = respuestaIA.Replace("[PISTA]", "").Replace("[pista]", "").Replace("[Pista]", "").Trim();
             GameContext.Instance.AñadirPista("El sospechoso se ha contradicho o reveló un dato clave.");
         }
         else
         {
-            Debug.Log("🔍 No se detectó [PISTA] en esta respuesta.");
+            Debug.Log("No se detectó [PISTA] en esta respuesta.");
         }
 
         // Emitir evento para que otros sistemas procesen
@@ -217,7 +209,7 @@ public class InterrogationManager : MonoBehaviour
             ActualizarFolio($"\n\n<b>TIEMPO AGOTADO</b>\nLa verdad era: {veredicto}");
         }
         
-        Debug.Log("🏁 Fin del tiempo. Esperando veredicto del jugador...");
+        Debug.Log("Fin del tiempo. Esperando veredicto del jugador...");
     }
 
     // --- MÉTODOS PÚBLICOS PARA LOS BOTONES DE LA INTERFAZ ---
@@ -236,9 +228,6 @@ public class InterrogationManager : MonoBehaviour
     {
         if (botonesEleccion != null)
         {
-            // Si el botón está dentro de los botones de elección (y comparten el mismo tamaño/layout),
-            // en vez de desactivar el padre y ocultar todos, simplemente ocultamos los hijos uno a uno, EXCEPTO el botón de reinicio.
-            // Esto previene que se rompa el tamaño (localScale) al haberlo sacado de padre en el fix anterior.
             if (botonReinicio != null && botonReinicio.transform.parent == botonesEleccion.transform)
             {
                 foreach (Transform child in botonesEleccion.transform)
@@ -276,7 +265,7 @@ public class InterrogationManager : MonoBehaviour
 
     public void ReiniciarInterrogatorio()
     {
-        Debug.Log("🔄 Reiniciando interrogatorio...");
+        Debug.Log("Reiniciando interrogatorio...");
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
@@ -286,11 +275,11 @@ public class InterrogationManager : MonoBehaviour
         {
             contenidoFolio += textoExtra;
             textoFolioVR.text = $"<b>CASO: {GameContext.Instance.DelitoActual.ID} - {GameContext.Instance.DelitoActual.TituloFolio}</b>\nSospechoso: Alex\n\n" + contenidoFolio;
-            Debug.Log($"📋 Folio actualizado. Texto añadido: '{textoExtra}'");
+            Debug.Log($"Folio actualizado. Texto añadido: '{textoExtra}'");
         }
         else
         {
-            Debug.LogError("❌ textoFolioVR NO está asignado en el Inspector. El folio no se puede actualizar.");
+            Debug.LogError("textoFolioVR NO está asignado en el Inspector. El folio no se puede actualizar.");
         }
     }
 }

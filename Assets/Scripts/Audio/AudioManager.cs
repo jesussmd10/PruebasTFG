@@ -1,91 +1,76 @@
 using UnityEngine;
 using UnityEngine.Networking;
 using System.Collections;
-using System.Text;
-using Newtonsoft.Json;
-
+using System.Diagnostics;
+using System.IO;
 
 public class AudioManager : MonoBehaviour
 {
     [SerializeField] private AudioSource audioSource;
-    [SerializeField] private string apiKey = "0f4d01eb7b2cf29c590a32b6d4f031b721f684b194a5ca0f39131cece6270072";
-    [SerializeField] private string voiceId = "2EiwWnXFnvU5JabPnv8n";
+    
+    [SerializeField] private string nombreVoz = "es-ES-AlvaroNeural";
 
-    private const string ELEVENLABS_URL = "https://api.elevenlabs.io/v1/text-to-speech/{0}";
-    private const int MAX_REINTENTOS = 3;
+    private string outputMp3Path;
 
     private void Start()
     {
-        if (audioSource == null)
-        {
-            audioSource = GetComponent<AudioSource>();
-        }
+        if (audioSource == null) audioSource = GetComponent<AudioSource>();
+        outputMp3Path = Path.Combine(Application.persistentDataPath, "acusado_azure.mp3");
     }
 
     public void ReproducirTexto(string texto)
     {
-        StartCoroutine(DescargarYReproducirConReintentos(texto, 0));
+        StartCoroutine(GenerarYReproducirEdge(texto));
     }
 
-    private IEnumerator DescargarYReproducirConReintentos(string texto, int intento)
+    private IEnumerator GenerarYReproducirEdge(string texto)
     {
-        if (string.IsNullOrEmpty(texto))
+        if (string.IsNullOrEmpty(texto)) yield break;
+
+        // Limpiamos las comillas del texto para que no rompan la consola de comandos
+        string textoLimpio = texto.Replace("\"", "'");
+
+        // Preparamos el comando para edge-tts
+        ProcessStartInfo startInfo = new ProcessStartInfo();
+        
+        startInfo.FileName = @"C:\Users\Jesus Santacruz\anaconda3\Scripts\edge-tts.exe"; 
+        
+        // Le pasamos los argumentos directamente
+        startInfo.Arguments = $"--voice {nombreVoz} --text \"{textoLimpio}\" --write-media \"{outputMp3Path}\"";
+        
+        startInfo.UseShellExecute = false;
+        startInfo.CreateNoWindow = true;
+
+        Process edgeProcess = new Process();
+        edgeProcess.StartInfo = startInfo;
+        edgeProcess.Start();
+
+        // Esperamos a que se descargue el audio de Microsoft
+        while (!edgeProcess.HasExited)
         {
-            Debug.LogWarning("Texto vacío para reproducir");
-            yield break;
+            yield return null; 
         }
 
-       
-        string idLimpio = voiceId.Trim();
-        string keyLimpia = apiKey.Trim();
-
-        
-        if (string.IsNullOrEmpty(idLimpio))
+        // Cargamos el MP3 en Unity
+        if (File.Exists(outputMp3Path))
         {
-            Debug.LogError("❌ El Voice ID está vacío. Escríbelo en el Inspector de Unity.");
-            yield break;
-        }
-
-        
-        string url = string.Format(ELEVENLABS_URL, idLimpio);
-
-        var datos = new
-        {
-            text = texto,
-            model_id = "eleven_multilingual_v2",
-            voice_settings = new { stability = 0.3f, similarity_boost = 0.8f }
-        };
-
-        string json = JsonConvert.SerializeObject(datos);
-        byte[] bodyRaw = Encoding.UTF8.GetBytes(json);
-
-        using (UnityWebRequest www = new UnityWebRequest(url, "POST"))
-        {
-            www.uploadHandler = new UploadHandlerRaw(bodyRaw);
-            www.downloadHandler = new DownloadHandlerAudioClip(url, AudioType.MPEG);
-            www.SetRequestHeader("Content-Type", "application/json");
-            www.SetRequestHeader("xi-api-key", keyLimpia);
-
-            yield return www.SendWebRequest();
-
-            if (www.result == UnityWebRequest.Result.Success)
+            using (UnityWebRequest www = UnityWebRequestMultimedia.GetAudioClip("file://" + outputMp3Path, AudioType.MPEG))
             {
-                AudioClip clip = DownloadHandlerAudioClip.GetContent(www);
-                audioSource.clip = clip;
-                audioSource.Play();
-                Debug.Log("🔊 Audio reproduciendo");
-            }
-            else    
-            {
-                if (intento < MAX_REINTENTOS)
+                yield return www.SendWebRequest();
+
+                if (www.result == UnityWebRequest.Result.Success)
                 {
-                    Debug.LogWarning($"Error de voz. Reintentando ({intento + 1}/{MAX_REINTENTOS})...");
-                    yield return new WaitForSeconds(1f);
-                    yield return DescargarYReproducirConReintentos(texto, intento + 1);
+                    AudioClip clip = DownloadHandlerAudioClip.GetContent(www);
+                    
+                    if (audioSource.clip != null) Destroy(audioSource.clip);
+                    
+                    audioSource.clip = clip;
+                    audioSource.Play();
+                    UnityEngine.Debug.Log("Azure hablando mediante edge-tts");
                 }
                 else
                 {
-                    Debug.LogError("Error de Voz después de reintentos: " + www.error);
+                    UnityEngine.Debug.LogError("Error cargando el MP3: " + www.error);
                 }
             }
         }

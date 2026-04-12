@@ -24,44 +24,95 @@ public class NPCBehavior : MonoBehaviour
         if (string.IsNullOrEmpty(textoCompleto) || characterAnimator == null)
             return;
 
-        // Extraer las acciones entre *asteriscos* (ej: *tiembla*, *se calma*)
         var acciones = ExtraerAcciones(textoCompleto);
+        
+        bool hayEmocion = false;
+        EmotionState emocionDetectada = EmotionState.Hablando; // Valor por defecto
 
         if (acciones.Count > 0)
         {
-            Debug.Log($"🎭 Acciones detectadas ({acciones.Count}):");
+            Debug.Log($"Acciones detectadas ({acciones.Count}):");
             foreach (var accion in acciones)
             {
                 Debug.Log($"   → \"{accion}\"");
-            }
-
-            // Detectar emociones SOLO a partir de las acciones extraídas
-            foreach (var accion in acciones)
-            {
                 string accionLow = accion.ToLower();
 
+                // Si detecta nerviosismo
                 if (accionLow.Contains("tiembla") || accionLow.Contains("miedo") || 
                     accionLow.Contains("nervioso") || accionLow.Contains("asusta") || 
                     accionLow.Contains("tartamudea") || accionLow.Contains("suda") ||
                     accionLow.Contains("tensa") || accionLow.Contains("agita"))
                 {
-                    EventSystem.OnEmotionChanged.Invoke(EmotionState.Nervioso);
+                    emocionDetectada = EmotionState.Nervioso;
+                    hayEmocion = true;
                 }
+                // Si detecta negación
+                else if (accionLow.Contains("niega") || 
+                         accionLow.Contains("cabeza") || accionLow.Contains("rechaza"))
+                {
+                    emocionDetectada = EmotionState.Negando;
+                    hayEmocion = true;
+                }
+                // Si detecta calma (quieta/idle)
                 else if (accionLow.Contains("calma") || accionLow.Contains("respira") || 
                          accionLow.Contains("tranquil") || accionLow.Contains("suspira") ||
                          accionLow.Contains("relaja"))
                 {
-                    EventSystem.OnEmotionChanged.Invoke(EmotionState.Calmado);
+                    emocionDetectada = EmotionState.Calmado;
+                    hayEmocion = true;
                 }
             }
         }
 
-        // Siempre animar mientras habla (si hay texto de diálogo)
         string textoDialogo = LimpiarTexto(textoCompleto);
+        
+        // EXTRA: Si no hizo ninguna acción entre asteriscos, pero el texto incluye la palabra "no" o "nunca"
+        if (!hayEmocion && !string.IsNullOrEmpty(textoDialogo))
+        {
+            // Usamos Regex \bno\b para asegurarnos de que es la palabra exacta "no" y no palabras como "noche".
+            if (Regex.IsMatch(textoDialogo.ToLower(), @"\bno\b") || textoDialogo.ToLower().Contains("nunca"))
+            {
+                emocionDetectada = EmotionState.Negando;
+                hayEmocion = true;
+                Debug.Log("Emoción deducida del diálogo: Dijo 'no' o 'nunca', forzamos NEGACION");
+            }
+        }
+
+        // Aquí decidimos el orden lógico:
         if (!string.IsNullOrEmpty(textoDialogo))
         {
-            EventSystem.OnEmotionChanged.Invoke(EmotionState.Hablando);
+            if (hayEmocion)
+            {
+                // Disparamos la corrutina para darle tiempo a hacer la emoción antes de hablar
+                StartCoroutine(AplicarEmocionYHablar(emocionDetectada));
+            }
+            else
+            {
+                // Si no hay acción extra, habla directamente
+                EventSystem.OnEmotionChanged.Invoke(EmotionState.Hablando);
+            }
         }
+        else
+        {
+            // Salta de postura si solo es una interjección sin diálogo
+            if (hayEmocion)
+            {
+                EventSystem.OnEmotionChanged.Invoke(emocionDetectada);
+            }
+        }
+    }
+
+    private System.Collections.IEnumerator AplicarEmocionYHablar(EmotionState emocionPrevia)
+    {
+        // Dispara la animación de su estado emocional (ej. Negar)
+        EventSystem.OnEmotionChanged.Invoke(emocionPrevia);
+
+        // Esperamos un poco para darle tiempo al modelo de hacer el gesto animado
+        // 1.5 a 2 segundos suele ser ideal para que se vea claro el gesto de negar
+        yield return new WaitForSeconds(1.5f);
+
+        // Mandamos la señal de hablar
+        EventSystem.OnEmotionChanged.Invoke(EmotionState.Hablando);
     }
 
     /// <summary>

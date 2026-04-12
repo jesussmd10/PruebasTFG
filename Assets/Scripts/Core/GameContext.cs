@@ -10,7 +10,7 @@ public class GameContext : MonoBehaviour
     private string pistasDescubiertas = "";
     private bool juegoTerminado = false;
 
-    // --- NUEVO PARA CASOS ALEATORIOS ---
+    // NUEVO PARA CASOS ALEATORIOS
     public class CasoDelito
     {
         public string ID;
@@ -31,7 +31,7 @@ public class GameContext : MonoBehaviour
         new CasoDelito { ID = "055", TituloFolio = "AGRESIÓN GRAVE", DescripcionFolio = "Asalto con violencia extrema a un transeúnte la pasada noche.", DescripcionPrompt = "haber atacado violentamente y agredido a una joven en el parque de madrugada" },
         new CasoDelito { ID = "092", TituloFolio = "TRÁFICO DE DROGAS Y ARMAS", DescripcionFolio = "Venta y distribución ilegal de armamento militar modificado.", DescripcionPrompt = "vender armas de fuego ilegales a bandas criminales organizadas desde el maletero de tu coche" }
     };
-    // -----------------------------------
+    
 
     public bool EsCulpable => esCulpable;
     public float TiempoPartida => tiempoPartida;

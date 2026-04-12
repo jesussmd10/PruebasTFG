@@ -16,7 +16,7 @@ public class DialogueSystem : MonoBehaviour
     {
         if (iaConfig == null)
         {
-            Debug.LogError("❌ IAConfig no asignado");
+            Debug.LogError("IAConfig no asignado");
         }
     }
 
@@ -50,7 +50,12 @@ public class DialogueSystem : MonoBehaviour
         var delito = GameContext.Instance.DelitoActual;
 
         string prompt = $"Eres Alex, principal sospechoso de {delito.DescripcionPrompt}, en la sala de interrogatorios de la comisaría. {actitud} ";
-        prompt += "Responde de forma muy natural, conversacional y fluida. Usa *acciones entre asteriscos* para expresar lenguaje corporal de la actitud descrita. ";
+        prompt += "Responde de forma natural y fluida. ES OBLIGATORIO Y ESTRICTAMENTE NECESARIO que SIEMPRE incluyas *lenguaje corporal entre asteriscos* al principio o en medio de tus frases. ";
+        prompt += "ATENCIÓN: DEBES usar EXACTAMENTE algunas de las siguientes palabras clave dentro de tus asteriscos para que el sistema reconozca tu estado físico: ";
+        prompt += "Si estás a la defensiva o negando: (*niega*, *mueve la cabeza*, *rechaza*). ";
+        prompt += "Si tienes pánico: (*tiembla*, *suda*, *muy nervioso*, *se asusta*, *tartamudea*). ";
+        prompt += "Si logras relajarte un poco: (*se calma*, *respira*, *suspira*, *se relaja*). ";
+        prompt += "Sin estas palabras exactas entre asteriscos, el sistema fallará. Úsalas de forma natural pero constante. ";
 
         if (esCulpable)
         {
@@ -80,7 +85,7 @@ public class DialogueSystem : MonoBehaviour
         historialDialogo.Add(new { role = "system", content = prompt });
         memoriaIniciada = true;
 
-        Debug.Log($"🤖 Personalidad IA: {(esCulpable ? "Culpable" : "Inocente")} | Coartada: {lugar} | Actitud: {actitud}");
+        Debug.Log($"Personalidad IA: {(esCulpable ? "Culpable" : "Inocente")} | Coartada: {lugar} | Actitud: {actitud}");
     }
 
     /// <summary>
