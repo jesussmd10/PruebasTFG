@@ -37,11 +37,15 @@ public class NPCBehavior : MonoBehaviour
                 Debug.Log($"   → \"{accion}\"");
                 string accionLow = accion.ToLower();
 
-                // Si detecta nerviosismo
+                // Si detecta nerviosismo (incluye enfado y pánico)
                 if (accionLow.Contains("tiembla") || accionLow.Contains("miedo") || 
                     accionLow.Contains("nervioso") || accionLow.Contains("asusta") || 
                     accionLow.Contains("tartamudea") || accionLow.Contains("suda") ||
-                    accionLow.Contains("tensa") || accionLow.Contains("agita"))
+                    accionLow.Contains("tensa") || accionLow.Contains("agita") ||
+                    accionLow.Contains("furioso") || accionLow.Contains("agresivo") ||
+                    accionLow.Contains("altera") || accionLow.Contains("pánico") ||
+                    accionLow.Contains("duda") || accionLow.Contains("enfada") ||
+                    accionLow.Contains("llora") || accionLow.Contains("desespera"))
                 {
                     emocionDetectada = EmotionState.Nervioso;
                     hayEmocion = true;
@@ -66,15 +70,18 @@ public class NPCBehavior : MonoBehaviour
 
         string textoDialogo = LimpiarTexto(textoCompleto);
         
-        // EXTRA: Si no hizo ninguna acción entre asteriscos, pero el texto incluye la palabra "no" o "nunca"
         if (!hayEmocion && !string.IsNullOrEmpty(textoDialogo))
         {
-            // Usamos Regex \bno\b para asegurarnos de que es la palabra exacta "no" y no palabras como "noche".
-            if (Regex.IsMatch(textoDialogo.ToLower(), @"\bno\b") || textoDialogo.ToLower().Contains("nunca"))
+            string tx = textoDialogo.ToLower();
+            // 1. Buscamos primero negaciones o contradicciones fuertes en el diálogo hablado
+            if (tx.Contains("no, no") || tx.Contains("eso no es verdad") || 
+                tx.Contains("es mentira") || tx.Contains("falso") || 
+                tx.Contains("montaje") || tx.Contains("injusto") || 
+                tx.Contains("jamás") || tx.Contains("me niego"))
             {
                 emocionDetectada = EmotionState.Negando;
                 hayEmocion = true;
-                Debug.Log("Emoción deducida del diálogo: Dijo 'no' o 'nunca', forzamos NEGACION");
+                Debug.Log("Emoción deducida del diálogo: Ocurre una negación fuerte, forzamos NEGACION");
             }
         }
 
@@ -123,11 +130,17 @@ public class NPCBehavior : MonoBehaviour
     public static System.Collections.Generic.List<string> ExtraerAcciones(string textoCompleto)
     {
         var acciones = new System.Collections.Generic.List<string>();
-        var matches = Regex.Matches(textoCompleto, @"\*(.+?)\*");
+        // Extraemos cualquier acción entre paréntesis o corchetes o asteriscos
+        var matches = Regex.Matches(textoCompleto, @"\((.*?)\)|\[(.*?)\]|\*(.*?)\*", RegexOptions.Singleline);
 
         foreach (Match match in matches)
         {
-            string accion = match.Groups[1].Value.Trim();
+            string accion = "";
+            if (match.Groups[1].Success) accion = match.Groups[1].Value;
+            else if (match.Groups[2].Success) accion = match.Groups[2].Value;
+            else if (match.Groups[3].Success) accion = match.Groups[3].Value;
+
+            accion = accion.Trim();
             if (!string.IsNullOrEmpty(accion))
             {
                 acciones.Add(accion);
@@ -143,11 +156,13 @@ public class NPCBehavior : MonoBehaviour
     /// </summary>
     public static string LimpiarTexto(string textoCompleto)
     {
-        // Elimina *acciones entre asteriscos*
-        string textoLimpio = Regex.Replace(textoCompleto, @"\*.*?\*", "");
-        // Elimina (paréntesis)
-        textoLimpio = Regex.Replace(textoLimpio, @"\(.*?\)", "").Trim();
-        return textoLimpio;
+        string textoLimpio = Regex.Replace(textoCompleto, @"\*.*?\*", "", RegexOptions.Singleline);
+        textoLimpio = Regex.Replace(textoLimpio, @"\(.*?\)", "", RegexOptions.Singleline);
+        textoLimpio = Regex.Replace(textoLimpio, @"\[.*?\]", "", RegexOptions.Singleline);
+        
+        textoLimpio = textoLimpio.Replace("*", "");
+
+        return textoLimpio.Trim();
     }
 
     /// <summary>

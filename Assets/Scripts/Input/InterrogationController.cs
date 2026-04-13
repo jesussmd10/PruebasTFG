@@ -12,8 +12,13 @@ public class InterrogationController : MonoBehaviour
 
     [Header("Detección de Grito")]
     [Range(0.01f, 1f)]
-    [SerializeField] private float umbralGrito = 0.2f;
-    [SerializeField] private bool usarMetodoPico = true;
+    [Tooltip("Umbral para considerar que se está gritando. Ajusta este valor viendo la consola.")]
+    [SerializeField] private float umbralGrito = 0.25f;
+
+    [Header("Detección de Silencio")]
+    [Range(0.0001f, 0.1f)]
+    [Tooltip("Si hablas y no te pilla, bájalo. Si Whisper se inventa subtítulos cuando no hablas, súbelo.")]
+    [SerializeField] private float umbralSilencio = 0.005f;
 
     private int posicionInicio;
     private AudioClip clipGrabado;
@@ -171,6 +176,13 @@ public class InterrogationController : MonoBehaviour
     {
         if (!grabando) return;
         grabando = false;
+        
+        StartCoroutine(ProcesarCierreGrabacion());
+    }
+
+    private IEnumerator ProcesarCierreGrabacion()
+    {
+        yield return new WaitForSeconds(0.4f);
 
         int posicionFinal = Microphone.GetPosition(microfonoActual);
 
@@ -178,23 +190,42 @@ public class InterrogationController : MonoBehaviour
         int inicioSeguro = Mathf.Max(0, posicionInicio - 8000);
         int cantidadMuestras = posicionFinal - inicioSeguro;
 
-        if (cantidadMuestras <= 0) return;
+        if (cantidadMuestras <= 0) yield break;
 
         // Crear clip limpio
         float[] muestrasRecortadas = new float[cantidadMuestras];
         clipGrabado.GetData(muestrasRecortadas, inicioSeguro);
 
-        AudioClip clipRecortado = AudioClip.Create("VozLimpia", cantidadMuestras, 1, 16000, false);
-        clipRecortado.SetData(muestrasRecortadas, 0);
-
-        // Detectar grito
-        float volumenDetectado = usarMetodoPico 
-            ? CalcularVolumenPico(clipRecortado) 
-            : CalcularVolumenRMS(clipRecortado);
-        
+        float volumenDetectado = CalcularVolumenRMS(muestrasRecortadas);
         bool estaGritando = volumenDetectado > umbralGrito;
 
         Debug.Log($"Volumen: {volumenDetectado:F4} | Gritando: {estaGritando}");
+
+        if (volumenDetectado < umbralSilencio)
+        {
+            Debug.LogWarning($"[Whisper Ignorado] El audio ({volumenDetectado:F4}) era puro silencio o ruido. Ajusta 'Umbral Silencio' si esto es un error.");
+            yield break;
+        }
+
+        float maxVal = 0f;
+        for (int i = 0; i < muestrasRecortadas.Length; i++)
+        {
+            if (Mathf.Abs(muestrasRecortadas[i]) > maxVal) maxVal = Mathf.Abs(muestrasRecortadas[i]);
+        }
+
+        if (maxVal > 0.001f)
+        {
+            // Amplificar la voz hasta un 90% pero limitamos a multiplicarlo x8 para evitar subir el ruido blanco
+            float multiplicador = Mathf.Min(0.9f / maxVal, 8f); 
+            for (int i = 0; i < muestrasRecortadas.Length; i++)
+            {
+                muestrasRecortadas[i] *= multiplicador;
+            }
+        }
+        // --------------------------------------
+
+        AudioClip clipRecortado = AudioClip.Create("VozLimpia", cantidadMuestras, 1, 16000, false);
+        clipRecortado.SetData(muestrasRecortadas, 0);
 
         // Procesar con Whisper
         ProcesarAudio(clipRecortado, estaGritando);
@@ -209,35 +240,14 @@ public class InterrogationController : MonoBehaviour
         EventSystem.OnInterrogacionRecibida.Invoke(resultado.Result, estaGritando);
     }
 
-    private float CalcularVolumenRMS(AudioClip clip)
+    private float CalcularVolumenRMS(float[] muestras)
     {
-        float[] muestras = new float[clip.samples];
-        clip.GetData(muestras, 0);
         float suma = 0;
-
         foreach (float muestra in muestras)
         {
             suma += muestra * muestra;
         }
 
         return Mathf.Sqrt(suma / muestras.Length);
-    }
-
-    private float CalcularVolumenPico(AudioClip clip)
-    {
-        float[] muestras = new float[clip.samples];
-        clip.GetData(muestras, 0);
-        float picoMaximo = 0;
-
-        foreach (float muestra in muestras)
-        {
-            float valorAbsoluto = Mathf.Abs(muestra);
-            if (valorAbsoluto > picoMaximo)
-            {
-                picoMaximo = valorAbsoluto;
-            }
-        }
-
-        return picoMaximo;
     }
 }

@@ -23,25 +23,25 @@ public class InterrogationManager : MonoBehaviour
     {
 
 
-        // Ocultar panel de veredicto si existe
+        
         if (panelVeredicto != null) panelVeredicto.SetActive(false);
 
-        // Forzar settings UI por código para sobreescribir errores del Inspector
+        
         if (textoRelojVR != null)
         {
-            textoRelojVR.isRightToLeftText = false; // Fix: 04:46 renderizado como 64:40
+            textoRelojVR.isRightToLeftText = false; 
             textoRelojVR.alignment = TMPro.TextAlignmentOptions.Center;
         }
 
         
         if (textoResultadoVeredicto != null)
         {
-            // Evitar que el texto se dibuje al revés en VR y asegurar que procese colores HTML
+            
             textoResultadoVeredicto.isRightToLeftText = false;
             textoResultadoVeredicto.alignment = TMPro.TextAlignmentOptions.Center;
             textoResultadoVeredicto.richText = true;
-            // Desactivar el word wrapping forzará a que no se divida en saltos de línea extraños por la caja estrecha
-            textoResultadoVeredicto.enableWordWrapping = false;
+            
+            textoResultadoVeredicto.textWrappingMode = TMPro.TextWrappingModes.NoWrap;
             textoResultadoVeredicto.overflowMode = TMPro.TextOverflowModes.Overflow;
         }
 
@@ -201,7 +201,7 @@ public class InterrogationManager : MonoBehaviour
         }
         else
         {
-            // Fallback original si no has asignado la UI
+            
             string veredicto = GameContext.Instance.EsCulpable 
                 ? "<color=red>¡ERA CULPABLE!</color>" 
                 : "<color=green>¡ERA INOCENTE!</color>";
@@ -212,7 +212,6 @@ public class InterrogationManager : MonoBehaviour
         Debug.Log("Fin del tiempo. Esperando veredicto del jugador...");
     }
 
-    // --- MÉTODOS PÚBLICOS PARA LOS BOTONES DE LA INTERFAZ ---
 
     public void ElegirCulpable()
     {

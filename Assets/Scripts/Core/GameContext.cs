@@ -49,7 +49,7 @@ public class GameContext : MonoBehaviour
         Instance = this;
         tiempoRestante = tiempoPartida;
         delitoActual = casosDisponibles[Random.Range(0, casosDisponibles.Length)];
-        Debug.Log($"⏱️ Tiempo de partida inicializado: {tiempoPartida}s ({Mathf.FloorToInt(tiempoPartida/60)}:{Mathf.FloorToInt(tiempoPartida%60):00})");
+        Debug.Log($"Tiempo de partida inicializado: {tiempoPartida}s ({Mathf.FloorToInt(tiempoPartida/60)}:{Mathf.FloorToInt(tiempoPartida%60):00})");
     }
 
     public void ConfigurarCulpabilidad(bool culpable)
