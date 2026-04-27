@@ -4,7 +4,7 @@ using System.Text.RegularExpressions;
 public class NPCBehavior : MonoBehaviour
 {
     [SerializeField] private CharacterAnimator characterAnimator;
-
+    [SerializeField] private NPCMovement npcMovement;
     private void OnEnable()
     {
         EventSystem.OnRespuestaIA.AddListener(ProcesarRespuesta);
@@ -24,6 +24,11 @@ public class NPCBehavior : MonoBehaviour
         if (string.IsNullOrEmpty(textoCompleto) || characterAnimator == null)
             return;
 
+        if (npcMovement != null && !npcMovement.YaEstaSentado)
+        {
+            Debug.LogWarning("El LLM ha respondido muy rápido. El NPC sigue caminando, ignoramos el cambio de emoción para que no vuele.");
+            return; 
+        }
         var acciones = ExtraerAcciones(textoCompleto);
         
         bool hayEmocion = false;

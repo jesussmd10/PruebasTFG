@@ -1,6 +1,5 @@
 using UnityEngine;
 
-
 public class NPCMovement : MonoBehaviour
 {
     [SerializeField] private Transform silla;
@@ -15,6 +14,10 @@ public class NPCMovement : MonoBehaviour
     [SerializeField] private Vector3 offsetRotacionSilla = Vector3.zero;
 
     private bool yaSeHaSentado = false;
+    public bool YaEstaSentado => yaSeHaSentado;
+
+    // ---> NUEVO: Creamos esta variable para que la IA sepa que estamos aparcando <---
+    public bool EstaLlegando { get; private set; } = false;
 
     private void Update()
     {
@@ -31,6 +34,12 @@ public class NPCMovement : MonoBehaviour
         Vector3 posicionPlanaSilla = new Vector3(silla.position.x, 0, silla.position.z);
         
         float distancia = Vector3.Distance(posicionPlanaNPC, posicionPlanaSilla);
+
+        // ---> AQUÍ LO PONES: Justo después de saber a qué distancia estamos <---
+        if (distancia < 0.8f)
+        {
+            EstaLlegando = true; // Avisamos de que estamos a menos de 80cm
+        }
 
         if (distancia > distanciaMinima)
         {
@@ -58,6 +67,7 @@ public class NPCMovement : MonoBehaviour
     private void Sentarse()
     {
         yaSeHaSentado = true;
+        EstaLlegando = false; 
         
         // Aplicar la posición exacta de la silla más el ajuste (offset)
         transform.position = silla.position + silla.TransformDirection(offsetPosicionSilla);
@@ -65,7 +75,7 @@ public class NPCMovement : MonoBehaviour
         transform.rotation = silla.rotation * Quaternion.Euler(offsetRotacionSilla);
 
         if (characterAnimator != null)
-        {
+        {   
             characterAnimator.Sentarse();
         }
 
