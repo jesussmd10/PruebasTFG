@@ -4109,6 +4109,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AudioManager
   audioSource: {fileID: 328002613}
+  iaConfig: {fileID: 11400000, guid: 25ac357765594f64c9588683591a320c, type: 2}
   nombreVoz: es-ES-AlvaroNeural
 --- !u!4 &1548482858
 Transform:
@@ -4862,7 +4863,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 4812f428f59ffec4196ba0140b043b9e, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 17.183975
+      value: 15.183975
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 4812f428f59ffec4196ba0140b043b9e, type: 3}
       propertyPath: m_LocalPosition.y
@@ -4870,7 +4871,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 4812f428f59ffec4196ba0140b043b9e, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -5.384389
+      value: -4.384389
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 4812f428f59ffec4196ba0140b043b9e, type: 3}
       propertyPath: m_LocalRotation.w
