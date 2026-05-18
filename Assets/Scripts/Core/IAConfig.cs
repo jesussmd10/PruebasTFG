@@ -9,6 +9,20 @@ public class IAConfig : ScriptableObject
     public string nombreModelo = "meta-llama-3.1-8b-instruct-abliterated";
     public float temperatura = 0.7f;
 
+    [Header("Streaming")]
+    [Tooltip("Activa streaming SSE para reducir latencia")]
+    public bool usarStreaming = true;
+
+    [Header("Límites de generación")]
+    [Tooltip("Máximo de tokens por respuesta de diálogo. 300 permite respuestas dinámicas.")]
+    public int maxTokensRespuesta = 300;
+
+    [Tooltip("Máximo de tokens para generación de caso")]
+    public int maxTokensCaso = 200;
+
+    [Tooltip("Máximo de mensajes en el historial (sin contar system). 10 = 5 turnos.")]
+    public int maxMensajesHistorial = 10;
+
     [Header("Text to Speech (Voz)")]
     public TTSProvider ttsProvider = TTSProvider.EdgeTTS;
     public string ttsApiKey = "";

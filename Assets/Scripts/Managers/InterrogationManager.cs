@@ -7,6 +7,7 @@ public class InterrogationManager : MonoBehaviour
 {
     [SerializeField] private DialogueSystem dialogueSystem;
     [SerializeField] private AudioManager audioManager;
+    [SerializeField] private CaseGenerator caseGenerator;
     [SerializeField] private TMPro.TextMeshProUGUI textoRelojVR;
     [SerializeField] private TMPro.TextMeshProUGUI textoFolioVR;
 
@@ -19,7 +20,7 @@ public class InterrogationManager : MonoBehaviour
     private string contenidoFolio = "";
     private bool juegoActivo = true;
 
-    private void Start()
+    private async void Start()
     {
 
 
@@ -99,23 +100,50 @@ public class InterrogationManager : MonoBehaviour
             }
         }
 
-        // Inicializar el contexto del juego
+        // Mostrar mensaje de carga en el folio mientras la IA genera el caso
+        ActualizarFolio("Generando caso...\n");
+
+        // Generar caso con la IA (Opción A)
+        GameContext.CasoDelito caso;
+        if (caseGenerator != null)
+        {
+            caso = await caseGenerator.GenerarCasoAsync();
+        }
+        else
+        {
+            Debug.LogWarning("CaseGenerator no asignado. Usando caso por defecto.");
+            caso = new GameContext.CasoDelito
+            {
+                ID = "001",
+                TituloFolio = "ROBO EN JOYERÍA",
+                DescripcionFolio = "Atraco a mano armada en la joyería central.",
+                DescripcionPrompt = "un atraco a mano armada en la joyería del centro donde se robaron diamantes",
+                Coartada = "en un bar local tomando algo solo",
+                Actitud = "Estás aterrado, tartamudeas mucho y casi lloras."
+            };
+        }
+
+        // Establecer caso en GameContext
+        GameContext.Instance.EstablecerCaso(caso);
+
+        // Culpabilidad aleatoria
         bool esCulpable = Random.value > 0.5f;
         GameContext.Instance.ConfigurarCulpabilidad(esCulpable);
         Debug.Log(esCulpable 
             ? "<color=red>🔴 EL SOSPECHOSO ES CULPABLE</color>" 
             : "<color=green>🟢 EL SOSPECHOSO ES INOCENTE</color>");
 
-        // Inicializar IA
-        dialogueSystem.InicializarPersonalidad(esCulpable);
-
+        // Inicializar IA con el caso generado
+        dialogueSystem.InicializarPersonalidad(esCulpable, caso);
 
         // Suscribirse a eventos
         EventSystem.OnInterrogacionRecibida.AddListener(ProcesarInterrogacion);
         EventSystem.OnInterrogatorioTerminado.AddListener(TerminarJuego);
         EventSystem.OnPistaDescubierta.AddListener(AñadirPistaAlFolio);
 
-        ActualizarFolio($"Inicio del interrogatorio.\nMotivo: {GameContext.Instance.DelitoActual.DescripcionFolio}\n\n");
+        // Limpiar folio y mostrar caso real
+        contenidoFolio = "";
+        ActualizarFolio($"Inicio del interrogatorio.\nMotivo: {caso.DescripcionFolio}\n\n");
     }
 
   
@@ -143,7 +171,7 @@ public class InterrogationManager : MonoBehaviour
     {
         Debug.Log($"Usuario: '{textoUsuario}' | Gritando: {usuarioGrita}");
 
-        // Obtener respuesta de IA
+        // Obtener respuesta de IA (streaming o clásica según IAConfig)
         string respuestaIA = await dialogueSystem.ObtenerRespuesta(textoUsuario, usuarioGrita);
 
         if (string.IsNullOrEmpty(respuestaIA))
@@ -167,14 +195,21 @@ public class InterrogationManager : MonoBehaviour
             Debug.Log("No se detectó [PISTA] en esta respuesta.");
         }
 
-        // Emitir evento para que otros sistemas procesen
+        // Emitir evento para que NPCBehavior procese emociones (si no estamos en streaming)
+        // En streaming, las emociones ya se detectaron en tiempo real
         EventSystem.OnRespuestaIA.Invoke(respuestaIA);
 
-        // Reproducir audio limpio
-        string textoLimpio = NPCBehavior.LimpiarTexto(respuestaIA);
-        if (!string.IsNullOrEmpty(textoLimpio))
+        // Si NO usamos streaming, reproducir audio de forma clásica
+        // (en streaming, el TTS ya se está procesando via OnFraseListaParaTTS)
+        bool streaming = dialogueSystem.UsaStreaming;
+        
+        if (!streaming)
         {
-            audioManager.ReproducirTexto(textoLimpio);
+            string textoLimpio = NPCBehavior.LimpiarTexto(respuestaIA);
+            if (!string.IsNullOrEmpty(textoLimpio))
+            {
+                audioManager.ReproducirTexto(textoLimpio);
+            }
         }
     }
 
@@ -186,6 +221,12 @@ public class InterrogationManager : MonoBehaviour
     private void TerminarJuego()
     {
         juegoActivo = false;
+
+        // Log de métricas de la sesión
+        if (LatencyMetrics.Instance != null)
+        {
+            Debug.Log(LatencyMetrics.Instance.ObtenerResumenSesion());
+        }
 
         if (panelVeredicto != null)
         {
@@ -273,7 +314,17 @@ public class InterrogationManager : MonoBehaviour
         if (textoFolioVR != null)
         {
             contenidoFolio += textoExtra;
-            textoFolioVR.text = $"<b>CASO: {GameContext.Instance.DelitoActual.ID} - {GameContext.Instance.DelitoActual.TituloFolio}</b>\nSospechoso: Alex\n\n" + contenidoFolio;
+
+            var caso = GameContext.Instance.DelitoActual;
+            if (caso != null)
+            {
+                textoFolioVR.text = $"<b>CASO: {caso.ID} - {caso.TituloFolio}</b>\nSospechoso: Alex\n\n" + contenidoFolio;
+            }
+            else
+            {
+                textoFolioVR.text = contenidoFolio;
+            }
+
             Debug.Log($"Folio actualizado. Texto añadido: '{textoExtra}'");
         }
         else

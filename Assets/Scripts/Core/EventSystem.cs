@@ -11,6 +11,15 @@ public static class EventSystem
     
     // Para animaciones emocionales
     public static UnityEvent<EmotionState> OnEmotionChanged = new UnityEvent<EmotionState>();
+
+    // Streaming: frase completa lista para TTS
+    public static UnityEvent<string> OnFraseListaParaTTS = new UnityEvent<string>();
+
+    // Streaming: respuesta completa terminada
+    public static UnityEvent<string> OnRespuestaIACompleta = new UnityEvent<string>();
+
+    // Estado de procesamiento (para UI feedback)
+    public static UnityEvent<bool> OnIAProcesando = new UnityEvent<bool>();
 }
 
 public enum EmotionState

@@ -24,6 +24,14 @@ public class NPCBehavior : MonoBehaviour
         if (string.IsNullOrEmpty(textoCompleto) || characterAnimator == null)
             return;
 
+        // Si estamos en modo streaming, ignoramos esta respuesta bulk final
+        // porque AudioManager gestiona la sincronización en tiempo real frase a frase.
+        var dialogueSystem = FindFirstObjectByType<DialogueSystem>();
+        if (dialogueSystem != null && dialogueSystem.UsaStreaming)
+        {
+            return;
+        }
+
         if (npcMovement != null && !npcMovement.YaEstaSentado)
         {
             Debug.LogWarning("El LLM ha respondido muy rápido. El NPC sigue caminando, ignoramos el cambio de emoción para que no vuele.");
@@ -156,16 +164,57 @@ public class NPCBehavior : MonoBehaviour
     }
 
     /// <summary>
-    /// Extrae el diálogo limpio (sin acciones entre asteriscos ni paréntesis)
-    /// Solo devuelve el texto que debe leerse en voz alta
+    /// Extrae el diálogo limpio (sin acciones entre asteriscos, paréntesis, corchetes, ni tags del sistema).
+    /// Solo devuelve el texto que debe leerse en voz alta. Es agresivo para que NADA se escape al TTS.
     /// </summary>
     public static string LimpiarTexto(string textoCompleto)
     {
-        string textoLimpio = Regex.Replace(textoCompleto, @"\*.*?\*", "", RegexOptions.Singleline);
-        textoLimpio = Regex.Replace(textoLimpio, @"\(.*?\)", "", RegexOptions.Singleline);
-        textoLimpio = Regex.Replace(textoLimpio, @"\[.*?\]", "", RegexOptions.Singleline);
-        
+        if (string.IsNullOrEmpty(textoCompleto)) return "";
+
+        string textoLimpio = textoCompleto;
+
+        // Reparar paréntesis/corchetes/asteriscos huérfanos al inicio (si hay un cierre antes de una apertura)
+        // Esto ocurre cuando el streaming corta el primer token (ej. "ueve la cabeza..." en vez de "(mueve la cabeza...")
+        int idxCierreP = textoLimpio.IndexOf(')');
+        int idxAperturaP = textoLimpio.IndexOf('(');
+        if (idxCierreP >= 0 && (idxAperturaP < 0 || idxAperturaP > idxCierreP))
+        {
+            textoLimpio = "(" + textoLimpio;
+        }
+
+        int idxCierreC = textoLimpio.IndexOf(']');
+        int idxAperturaC = textoLimpio.IndexOf('[');
+        if (idxCierreC >= 0 && (idxAperturaC < 0 || idxAperturaC > idxCierreC))
+        {
+            textoLimpio = "[" + textoLimpio;
+        }
+
+        // 1. Eliminar [PISTA] y variantes ANTES de todo (case-insensitive, con o sin corchetes)
+        textoLimpio = Regex.Replace(textoLimpio, @"\[?\s*PISTA\s*\]?", "", RegexOptions.IgnoreCase);
+
+        // 2. Eliminar contenido entre delimitadores completos (parejas cerradas)
+        textoLimpio = Regex.Replace(textoLimpio, @"\*[^*]+\*", "", RegexOptions.Singleline);
+        textoLimpio = Regex.Replace(textoLimpio, @"\([^)]+\)", "", RegexOptions.Singleline);
+        textoLimpio = Regex.Replace(textoLimpio, @"\[[^\]]+\]", "", RegexOptions.Singleline);
+
+        // 3. Eliminar contenido huérfano (paréntesis/corchetes/asteriscos que se abrieron pero no se cerraron)
+        //    Esto pasa en streaming cuando el token llega partido: "(tiembla nerviosamente" sin el ")"
+        textoLimpio = Regex.Replace(textoLimpio, @"\([^)]*$", "", RegexOptions.Singleline);  // ( sin )
+        textoLimpio = Regex.Replace(textoLimpio, @"\[[^\]]*$", "", RegexOptions.Singleline);  // [ sin ]
+        textoLimpio = Regex.Replace(textoLimpio, @"\*[^*]*$", "", RegexOptions.Singleline);   // * sin cierre
+        //    También el caso inverso: cierre sin apertura (ej: "nerviosamente)" al inicio)
+        textoLimpio = Regex.Replace(textoLimpio, @"^[^(]*\)", "", RegexOptions.Singleline);
+        textoLimpio = Regex.Replace(textoLimpio, @"^[^\[]*\]", "", RegexOptions.Singleline);
+
+        // 4. Eliminar cualquier carácter delimitador suelto que haya sobrevivido
         textoLimpio = textoLimpio.Replace("*", "");
+        textoLimpio = textoLimpio.Replace("(", "");
+        textoLimpio = textoLimpio.Replace(")", "");
+        textoLimpio = textoLimpio.Replace("[", "");
+        textoLimpio = textoLimpio.Replace("]", "");
+
+        // 5. Limpiar espacios múltiples y saltos de línea extra
+        textoLimpio = Regex.Replace(textoLimpio, @"\s{2,}", " ");
 
         return textoLimpio.Trim();
     }
