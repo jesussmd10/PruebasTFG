@@ -28,6 +28,13 @@ public class InterrogationController : MonoBehaviour
     private void Start()
     {
         InicializarMicrófono();
+
+        // Forzar idioma español y proveer un prompt inicial en Whisper para evitar latencia de auto-detección y errores de reconocimiento.
+        if (whisper != null)
+        {
+            whisper.language = "es";
+            whisper.initialPrompt = "interrogatorio, sospechoso, culpable, inocente, coartada, delito, policía, detective, Alex, comisaría, pistas, asesinato, robo, mentiras.";
+        }
     }
 
     private void OnEnable()

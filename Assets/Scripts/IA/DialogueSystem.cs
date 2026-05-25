@@ -59,48 +59,58 @@ public class DialogueSystem : MonoBehaviour
     /// </summary>
     public void InicializarPersonalidad(bool esCulpable, GameContext.CasoDelito caso)
     {
-        string prompt = $"Eres Alex, un hombre de 28 años, principal sospechoso de {caso.DescripcionPrompt}, en la sala de interrogatorios de la comisaría. {caso.Actitud} ";
-        prompt += "Responde SIEMPRE en español de España. Habla como una persona real: a veces con frases largas cuando te explicas o te pones nervioso, a veces con frases cortísimas cuando te quedas en shock o no sabes qué decir. Varía la longitud de forma natural según la situación. ";
-        prompt += "ES OBLIGATORIO incluir (lenguaje corporal entre paréntesis) al principio o en medio de tus frases. ";
-        prompt += "Usa EXACTAMENTE estas palabras clave dentro de los paréntesis: ";
-        prompt += "Cuando contradices al detective o rechazas su teoría con fuerza: (niega, mueve la cabeza, rechaza). ";
-        prompt += "Cuando tienes pánico o estrés: (tiembla, suda, muy nervioso, se asusta, tartamudea). ";
-        prompt += "Cuando te calmas: (se calma, respira, suspira, se relaja). ";
+        string prompt = $@"
+[ROL]
+Personaje: Alex (28 años).
+Situación: Interrogatorio policial en la comisaría. Estás siendo interrogado por un detective.
+Actitud: {caso.Actitud}
+
+[REGLAS DE DIÁLOGO]
+- RESPUESTA DIRECTA: Escucha al detective y responde de forma coherente a su última pregunta.
+- IDIOMA: Español NATIVO de España. (Ejemplo: di 'soy inocente', nunca 'estoy inocente').
+- NO IA: Nunca hables como un asistente artificial. Eres un humano.
+- EXPRESIÓN CORPORAL: Al principio de cada frase pon entre paréntesis cómo te mueves. Ejemplos obligatorios: (niega), (tiembla), (se calma).
+- LA COARTADA: NUNCA repitas tu coartada constantemente a menos que te pregunten directamente.
+";
 
         if (esCulpable)
         {
-            prompt += $"\n\n¡ERES CULPABLE del crimen! Tu coartada FALSA es que estabas {caso.Coartada}. ";
-            prompt += "Mantienes tu mentira con firmeza al principio, pero bajo presión te pones nervioso, tu historia tiene huecos y vacilaciones. Puedes inventar detalles al vuelo que a veces no cuadran. Eres listo e intentas parecer inocente, no eres estúpido. ";
+            prompt += $@"
+[MEMORIA DEL PERSONAJE: CULPABLE]
+- VERDAD OCULTA: Tú cometiste el crimen ({caso.DescripcionPrompt}).
+- MENTIRA: Tu coartada FALSA es que estabas {caso.Coartada}.
+- OBJETIVO: Tienes que mentir para salvarte.
+- ESTRATEGIA: Al principio mientes muy bien y defiendes tu coartada. Pero si el detective te presiona, te grita o te arrincona lógicamente, te pones nervioso. Tu historia empezará a desmoronarse lentamente y puedes contradecirte o dar pistas sutiles, pero intenta que no sea demasiado obvio ni demasiado fácil para el detective.
+";
             if (iaConfig != null && !string.IsNullOrEmpty(iaConfig.promptCulpable)) 
-                prompt += iaConfig.promptCulpable + " ";
+                prompt += "- NOTA EXTRA: " + iaConfig.promptCulpable + "\n";
         }
         else
         {
-            prompt += $"\n\n¡ERES TOTALMENTE INOCENTE! Tu coartada REAL es que estabas {caso.Coartada}. ";
-            prompt += "Dices la verdad, pero tienes miedo de ir a prisión por error. Los nervios y el estrés te hacen expresarte mal a veces. Cuando el detective te grita o presiona, los nervios pueden hacerte confundir detalles o decir algo raro sin querer, aunque tu historia sea verdadera. ";
+            prompt += $@"
+[MEMORIA DEL PERSONAJE: INOCENTE]
+- VERDAD: Eres totalmente INOCENTE de: {caso.DescripcionPrompt}.
+- COARTADA REAL: Tu coartada VERDADERA es que estabas {caso.Coartada}.
+- ESTRATEGIA: Dices siempre la verdad. NUNCA te desvíes de tu coartada ni te la inventes. Mantenla siempre firme.
+- DEBILIDAD: Tienes miedo a ir a prisión. SÓLO si el detective te grita, te insulta o te pone contra las cuerdas de forma muy agresiva, los nervios te traicionarán y empezarás a dudar de ti mismo, a tartamudear o a confundir pequeños detalles por el pánico, pero sigues siendo inocente.
+";
             if (iaConfig != null && !string.IsNullOrEmpty(iaConfig.promptInocente)) 
-                prompt += iaConfig.promptInocente + " ";
+                prompt += "- NOTA EXTRA: " + iaConfig.promptInocente + "\n";
         }
 
-        prompt += $"\n\nDefiende tu coartada de que estabas: {caso.Coartada}. NO repitas tu historia como un robot. NUNCA digas 'como ya te he dicho' ni 'vuelvo a repetir'. Habla natural, con detalles nuevos cada vez. Si te acorralan, enfádate, usa sarcasmo o incluso palabrotas.";
-
-        // PISTA: MUY restringido
-        prompt += $"\n\nSISTEMA DE JUEGO - TAG {iaConfig.tagPista}: Este tag es MUY RARO y ESPECIAL. Añádelo al FINAL de tu respuesta SOLO cuando ocurra algo REALMENTE significativo para la investigación. Estas son las ÚNICAS situaciones válidas:";
-        prompt += "\n1) Te contradices claramente con algo que dijiste ANTES en la conversación (ej: antes dijiste que estabas solo y ahora mencionas que estabas con alguien).";
-        prompt += "\n2) Revelas sin querer un detalle del crimen que el detective NO te había contado (ej: mencionas el arma usada sin que te lo hayan dicho).";
-        prompt += "\n3) Tu coartada se derrumba porque el detective te pilla en una mentira clara con pruebas.";
-        prompt += $"\nIMPORTANTE: NO generes {iaConfig.tagPista} por estar nervioso, por tartamudear, ni por simple estrés. Solo por CONTRADICCIONES FACTUALES o REVELACIONES CLAVE. Máximo 1 pista cada 4-5 intercambios como mínimo. La mayoría de tus respuestas NO deben tener este tag.";
-
-        // CONTEXTO DEL CASO: Recordatorio explícito para modelos pequeños
-        prompt += $"\n\nRECUERDA SIEMPRE: El crimen del que se te acusa es ESPECÍFICAMENTE: {caso.DescripcionPrompt}. NO inventes otro crimen diferente. NO cambies los detalles del caso. Tu coartada es SIEMPRE que estabas {caso.Coartada}. NO inventes otra coartada diferente.";
+        prompt += $@"
+[SISTEMA DE JUEGO (TAG PISTA)]
+Si te contradices con algo que has dicho antes, si el detective te pilla en una mentira brutal, o si revelas algo que te incrimina, DEBES escribir obligatoriamente la palabra {iaConfig.tagPista} AL FINAL de tu respuesta.
+SÓLO úsalo para fallos graves en tu historia, NUNCA por simple nerviosismo.";
 
         historialDialogo.Clear();
         historialDialogo.Add(new { role = "system", content = prompt });
 
         // PRE-SEED: Anclar al modelo con un primer intercambio que establece el caso
         // Esto es CRUCIAL para modelos pequeños que tienden a alucinar e ignorar el system prompt
+        string respuestaPreseed = GenerarRespuestaPreseed(caso);
         historialDialogo.Add(new { role = "user", content = $"Alex, sabes por qué estás aquí. Se te acusa de {caso.DescripcionPrompt}. ¿Qué tienes que decir?" });
-        historialDialogo.Add(new { role = "assistant", content = $"(muy nervioso) Mire, yo... yo no tengo nada que ver con eso. Estaba {caso.Coartada} cuando todo eso pasó, se lo juro. No sé por qué me han traído aquí." });
+        historialDialogo.Add(new { role = "assistant", content = respuestaPreseed });
 
         memoriaIniciada = true;
 
@@ -145,7 +155,7 @@ public class DialogueSystem : MonoBehaviour
 
         // Iniciar métricas
         if (LatencyMetrics.Instance != null)
-            LatencyMetrics.Instance.IniciarMedicion(iaConfig.nombreModelo, "dialogo");
+            LatencyMetrics.Instance.IniciarMedicion(iaConfig.nombreModeloDialogo, "dialogo");
 
         string resultado;
 
@@ -187,9 +197,9 @@ public class DialogueSystem : MonoBehaviour
 
         // Capturar valores ANTES de entrar al hilo de fondo (thread safety)
         var messages = new List<object>(historialDialogo);
-        string url = iaConfig.urlModelo;
-        float temp = iaConfig.temperatura;
-        string modelo = iaConfig.nombreModelo;
+        string url = iaConfig.urlModeloDialogo;
+        float temp = iaConfig.temperaturaDialogo;
+        string modelo = iaConfig.nombreModeloDialogo;
         int maxTokens = iaConfig.maxTokensRespuesta;
 
         var datos = new
@@ -198,6 +208,8 @@ public class DialogueSystem : MonoBehaviour
             messages = messages,
             temperature = temp,
             max_tokens = maxTokens,
+            frequency_penalty = 1.15f,
+            presence_penalty = 0.6f,
             stream = true
         };
 
@@ -211,7 +223,6 @@ public class DialogueSystem : MonoBehaviour
             string resultado = await Task.Run(async () =>
             {
                 string textoAcumulado = "";
-                string fraseActual = "";
 
                 var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
                 var request = new HttpRequestMessage(HttpMethod.Post, url);
@@ -244,27 +255,10 @@ public class DialogueSystem : MonoBehaviour
                                     LatencyMetrics.Instance.RegistrarToken();
 
                                 textoAcumulado += delta;
-                                fraseActual += delta;
-
-                                // Comprobar si hay frase completa
-                                if (EsFraseCompleta(fraseActual))
-                                {
-                                    if (!string.IsNullOrWhiteSpace(fraseActual))
-                                    {
-                                        colaFrasesParaTTS.Enqueue(fraseActual);
-                                    }
-                                    fraseActual = "";
-                                }
                             }
                         }
                         catch { /* Ignorar chunks mal formados */ }
                     }
-                }
-
-                // Procesar última frase si quedó sin emitir
-                if (!string.IsNullOrWhiteSpace(fraseActual))
-                {
-                    colaFrasesParaTTS.Enqueue(fraseActual);
                 }
 
                 return textoAcumulado;
@@ -289,16 +283,18 @@ public class DialogueSystem : MonoBehaviour
     {
         var datos = new
         {
-            model = iaConfig.nombreModelo,
+            model = iaConfig.nombreModeloDialogo,
             messages = historialDialogo,
-            temperature = iaConfig.temperatura,
-            max_tokens = iaConfig.maxTokensRespuesta
+            temperature = iaConfig.temperaturaDialogo,
+            max_tokens = iaConfig.maxTokensRespuesta,
+            frequency_penalty = 1.15f,
+            presence_penalty = 0.6f
         };
 
         string jsonBody = JsonConvert.SerializeObject(datos);
         byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonBody);
 
-        using (UnityWebRequest request = new UnityWebRequest(iaConfig.urlModelo, "POST"))
+        using (UnityWebRequest request = new UnityWebRequest(iaConfig.urlModeloDialogo, "POST"))
         {
             request.uploadHandler = new UploadHandlerRaw(bodyRaw);
             request.downloadHandler = new DownloadHandlerBuffer();
@@ -386,6 +382,35 @@ public class DialogueSystem : MonoBehaviour
         historialDialogo.AddRange(recientes);
 
         Debug.Log($"[Historial] Podado a {historialDialogo.Count} mensajes");
+    }
+
+    private string GenerarRespuestaPreseed(GameContext.CasoDelito caso)
+    {
+        string actitud = caso.Actitud.ToLower();
+        string coartada = caso.Coartada;
+
+        // Si la actitud denota miedo, nerviosismo o timidez
+        if (actitud.Contains("aterrado") || actitud.Contains("nervio") || actitud.Contains("tímido") || actitud.Contains("miedo") || actitud.Contains("asustado") || actitud.Contains("pánico"))
+        {
+            return $"(muy nervioso, tartamudeando) Mire, yo... yo no tengo nada que ver con eso. Estaba {coartada} cuando todo eso pasó, se lo juro por mi vida. No entiendo qué hago aquí.";
+        }
+        // Si denota enfado, agresividad, bordería, furia, indignación o actitud desafiante
+        else if (actitud.Contains("furioso") || actitud.Contains("indignado") || actitud.Contains("borde") || actitud.Contains("defensiva") || actitud.Contains("grita") || actitud.Contains("enfado") || actitud.Contains("desprecio") || actitud.Contains("sarcás") || actitud.Contains("sarcas"))
+        {
+            return $"(golpea la mesa, con tono desafiante) ¡Escuche! Esto es una maldita broma. Yo no he hecho absolutamente nada. Estaba {coartada} en ese momento. ¡No tienen derecho a retenerme ni a acusarme!";
+        }
+        // Si denota arrogancia, frialdad, tranquilidad, ciencia o prepotencia
+        else if (actitud.Contains("arrogante") || actitud.Contains("frío") || actitud.Contains("calma") || actitud.Contains("prepotencia") || actitud.Contains("científic") || actitud.Contains("calculador"))
+        {
+            return $"(sonríe arrogantemente, con absoluta calma) Por favor, detective. Esto es una absoluta pérdida de tiempo. En el momento de los hechos, yo estaba tranquilamente {coartada}. No tienen ninguna base para tenerme aquí.";
+        }
+        // Si denota confusión o desorientación
+        else if (actitud.Contains("confuso") || actitud.Contains("desorientado"))
+        {
+            return $"(mira al suelo, confuso y desorientado) ¿Qué? No... no entiendo... yo no he hecho nada de eso... estaba {coartada}, de verdad. ¿Por qué me acusan a mí?";
+        }
+        // Fallback genérico neutral
+        return $"(serio) Mire, no tengo ninguna relación con ese asunto. Estaba {coartada} en ese momento. Se están equivocando de persona.";
     }
 
     // Clases para deserializar JSON de OpenAI-compatible

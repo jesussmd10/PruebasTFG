@@ -18,7 +18,7 @@ public class InterrogationManager : MonoBehaviour
     [SerializeField] private TMPro.TextMeshProUGUI textoResultadoVeredicto;
 
     private string contenidoFolio = "";
-    private bool juegoActivo = true;
+    private bool juegoActivo = false;
 
     private async void Start()
     {
@@ -100,27 +100,36 @@ public class InterrogationManager : MonoBehaviour
             }
         }
 
-        // Mostrar mensaje de carga en el folio mientras la IA genera el caso
-        ActualizarFolio("Generando caso...\n");
+        // Lógica de inicio de partida
+        juegoActivo = true;
 
-        // Generar caso con la IA (Opción A)
-        GameContext.CasoDelito caso;
-        if (caseGenerator != null)
+        GameContext.CasoDelito caso = GameContext.CasoPrecargado;
+
+        if (caso == null)
         {
-            caso = await caseGenerator.GenerarCasoAsync();
+            ActualizarFolio("Generando caso en tiempo real...\n");
+            if (caseGenerator != null)
+            {
+                caso = await caseGenerator.GenerarCasoAsync();
+            }
+            else
+            {
+                Debug.LogWarning("CaseGenerator no asignado. Usando caso por defecto.");
+                caso = new GameContext.CasoDelito
+                {
+                    ID = "001",
+                    TituloFolio = "ROBO EN JOYERÍA",
+                    DescripcionFolio = "Atraco a mano armada en la joyería central.",
+                    DescripcionPrompt = "un atraco a mano armada en la joyería del centro donde se robaron diamantes",
+                    Coartada = "en un bar local tomando algo solo",
+                    Actitud = "Estás aterrado, tartamudeas mucho y casi lloras."
+                };
+            }
         }
         else
         {
-            Debug.LogWarning("CaseGenerator no asignado. Usando caso por defecto.");
-            caso = new GameContext.CasoDelito
-            {
-                ID = "001",
-                TituloFolio = "ROBO EN JOYERÍA",
-                DescripcionFolio = "Atraco a mano armada en la joyería central.",
-                DescripcionPrompt = "un atraco a mano armada en la joyería del centro donde se robaron diamantes",
-                Coartada = "en un bar local tomando algo solo",
-                Actitud = "Estás aterrado, tartamudeas mucho y casi lloras."
-            };
+            // Limpiar el caso precargado para que no se reutilice si se reinicia la escena directamente
+            GameContext.CasoPrecargado = null;
         }
 
         // Establecer caso en GameContext
@@ -195,21 +204,13 @@ public class InterrogationManager : MonoBehaviour
             Debug.Log("No se detectó [PISTA] en esta respuesta.");
         }
 
-        // Emitir evento para que NPCBehavior procese emociones (si no estamos en streaming)
-        // En streaming, las emociones ya se detectaron en tiempo real
+        // Emitir evento para que NPCBehavior procese emociones
         EventSystem.OnRespuestaIA.Invoke(respuestaIA);
 
-        // Si NO usamos streaming, reproducir audio de forma clásica
-        // (en streaming, el TTS ya se está procesando via OnFraseListaParaTTS)
-        bool streaming = dialogueSystem.UsaStreaming;
-        
-        if (!streaming)
+        // Reproducir la respuesta completa de una sola vez para mantener la entonación y las emociones naturales
+        if (!string.IsNullOrEmpty(respuestaIA))
         {
-            string textoLimpio = NPCBehavior.LimpiarTexto(respuestaIA);
-            if (!string.IsNullOrEmpty(textoLimpio))
-            {
-                audioManager.ReproducirTexto(textoLimpio);
-            }
+            audioManager.ReproducirTexto(respuestaIA); // Pasamos respuestaIA con las marcas de emoción para que AudioManager las detecte
         }
     }
 

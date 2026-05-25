@@ -65,7 +65,7 @@ public class AudioManager : MonoBehaviour
         if (string.IsNullOrWhiteSpace(frase)) return;
 
         colaFrases.Enqueue(frase);
-        UnityEngine.Debug.Log($"[AudioQueue] Encolada frase: '{frase.Substring(0, Mathf.Min(50, frase.Length))}...' (Frases en cola: {colaFrases.Count})");
+        UnityEngine.Debug.Log($"[AudioQueue] Encolada frase: '{frase}' (Frases en cola: {colaFrases.Count})");
 
         // Iniciar la descarga en segundo plano si no está activa
         if (!generandoEnFondo)
@@ -375,11 +375,15 @@ public class AudioManager : MonoBehaviour
         contadorArchivos++;
         string outputPath = Path.Combine(Application.persistentDataPath, $"tts_output_{contadorArchivos}.mp3");
         string textoLimpio = texto.Replace("\"", "'").Replace("\n", " ").Replace("\r", "");
+        
+        // Guardar el texto en un archivo para evitar límites de longitud o cortes en la línea de comandos
+        string textFilePath = Path.Combine(Application.persistentDataPath, $"tts_text_{contadorArchivos}.txt");
+        File.WriteAllText(textFilePath, textoLimpio, Encoding.UTF8);
 
         ProcessStartInfo startInfo = new ProcessStartInfo
         {
             FileName = edgeTtsPath,
-            Arguments = $"--voice {nombreVoz} --text \"{textoLimpio}\" --write-media \"{outputPath}\"",
+            Arguments = $"--voice {nombreVoz} -f \"{textFilePath}\" --write-media \"{outputPath}\"",
             UseShellExecute = false,
             CreateNoWindow = true,
             RedirectStandardError = true
@@ -429,7 +433,7 @@ public class AudioManager : MonoBehaviour
                 }
             }
 
-            StartCoroutine(LimpiarArchivoTemporal(outputPath, 4f));
+            StartCoroutine(LimpiarArchivosTemporales(outputPath, textFilePath, 4f));
         }
         else
         {
@@ -437,12 +441,13 @@ public class AudioManager : MonoBehaviour
         }
     }
 
-    private IEnumerator LimpiarArchivoTemporal(string path, float delay)
+    private IEnumerator LimpiarArchivosTemporales(string pathAudio, string pathTexto, float delay)
     {
         yield return new WaitForSeconds(delay);
         try
         {
-            if (File.Exists(path)) File.Delete(path);
+            if (File.Exists(pathAudio)) File.Delete(pathAudio);
+            if (File.Exists(pathTexto)) File.Delete(pathTexto);
         }
         catch { }
     }

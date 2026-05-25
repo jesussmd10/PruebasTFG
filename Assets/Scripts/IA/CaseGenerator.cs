@@ -31,14 +31,61 @@ public class CaseGenerator : MonoBehaviour
         new GameContext.CasoDelito { ID = "066", TituloFolio = "VANDALISMO GRAVE", DescripcionFolio = "Destruccion masiva de mobiliario urbano y vehiculos aparcados.", DescripcionPrompt = "haber destrozado coches y mobiliario urbano en una noche de vandalismo", Coartada = "en casa durmiendo porque tenias fiebre", Actitud = "Pareces confuso y desorientado, como si no entendieras que haces aqui." },
     };
 
-    // Prompt ONE-SHOT: un ejemplo completo que el modelo solo tiene que imitar con otro crimen
-    private static readonly string promptGeneracion =
-@"Genera un caso policial DIFERENTE al ejemplo. Responde SOLO con JSON.
+    private static readonly string[] tematicas = new string[]
+    {
+        "un ASESINATO MACABRO en un callejón oscuro",
+        "un CASO ABSURDO sobre el robo de una mascota famosa",
+        "un SECUESTRO de un político importante",
+        "un CRIMEN BIZARRO en un laboratorio clandestino",
+        "un ATRACO VIOLENTO a un banco central",
+        "un SABOTAJE en una fábrica de tecnología militar"
+    };
 
-EJEMPLO:
-{""id"":""042"",""titulo"":""ROBO EN JOYERÍA"",""descripcionFolio"":""Atraco a mano armada en la joyería central."",""descripcionPrompt"":""un atraco a mano armada en la joyería del centro donde se robaron diamantes"",""coartada"":""en un bar local tomando algo solo"",""actitud"":""Estás aterrado, tartamudeas mucho y casi lloras.""}
+    private static readonly string[] actitudes = new string[]
+    {
+        "Estás aterrado, lloras a lágrima viva y tartamudeas.",
+        "Eres frío como el hielo, calculador y un poco psicópata.",
+        "Eres arrogante, chulo, y te ríes del detective.",
+        "Estás a la defensiva, muy enfadado y ofendido.",
+        "Pareces confundido, desorientado y algo torpe.",
+        "Estás extremadamente nervioso, sudando y moviendo las manos."
+    };
 
-Ahora genera TÚ un caso NUEVO y DIFERENTE. Solo el JSON:";
+    private static readonly string[] coartadas = new string[]
+    {
+        "viendo una película solo en el cine de la calle Mayor",
+        "comprando leche y cereales en el supermercado 24h",
+        "durmiendo en casa de un amigo después de una fiesta",
+        "haciendo horas extra en tu oficina, solo frente al ordenador",
+        "cenando en un restaurante barato a las afueras de la ciudad",
+        "paseando a tu perro por el parque central, sin ver a nadie"
+    };
+
+    private static string ObtenerPromptDinamico()
+    {
+        string tema = tematicas[Random.Range(0, tematicas.Length)];
+        string actitud = actitudes[Random.Range(0, actitudes.Length)];
+        string coartada = coartadas[Random.Range(0, coartadas.Length)];
+        
+        return $@"Eres un generador de datos policiales. Debes devolver ÚNICAMENTE un objeto JSON válido.
+No escribas introducciones, no uses markdown. SOLO JSON. Escribe en perfecto español.
+
+INSTRUCCIONES DE GENERACIÓN:
+Tienes que crear los detalles de este caso concreto:
+- CRIMEN OBLIGATORIO: {tema}
+- COARTADA DEL SOSPECHOSO: {coartada}
+- ACTITUD DEL SOSPECHOSO: {actitud}
+
+El JSON debe tener EXACTAMENTE este formato y claves:
+{{
+  ""id"": ""123"",
+  ""titulo"": ""TÍTULO DEL CRIMEN EN MAYÚSCULAS"",
+  ""descripcionFolio"": ""Resumen de una línea del delito para el expediente."",
+  ""descripcionPrompt"": ""La descripción detallada del crimen que cometió."",
+  ""coartada"": ""{coartada}"",
+  ""actitud"": ""{actitud}""
+}}";
+    }
 
     /// <summary>
     /// Intenta generar un caso con la IA. Si falla, devuelve fallback.
@@ -57,7 +104,7 @@ Ahora genera TÚ un caso NUEVO y DIFERENTE. Solo el JSON:";
 
             // Iniciar medición de métricas
             if (LatencyMetrics.Instance != null)
-                LatencyMetrics.Instance.IniciarMedicion(iaConfig.nombreModelo, "caso");
+                LatencyMetrics.Instance.IniciarMedicion(iaConfig.nombreModeloCasos, "caso");
 
             string respuesta = await EnviarPeticion();
 
@@ -91,26 +138,29 @@ Ahora genera TÚ un caso NUEVO y DIFERENTE. Solo el JSON:";
     {
         var messages = new List<object>
         {
-            new { role = "user", content = promptGeneracion }
+            new { role = "user", content = ObtenerPromptDinamico() }
         };
+
+        // Usamos un mínimo de 512 tokens para asegurar que el JSON detallado no se corte
+        int tokens = Mathf.Max(iaConfig.maxTokensCaso, 512);
 
         var datos = new
         {
-            model = iaConfig.nombreModelo,
+            model = iaConfig.nombreModeloCasos,
             messages = messages,
-            temperature = 0.8f,
-            max_tokens = iaConfig.maxTokensCaso
+            temperature = iaConfig.temperaturaCasos,
+            max_tokens = tokens
         };
 
         string jsonBody = JsonConvert.SerializeObject(datos);
         byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonBody);
 
-        using (UnityWebRequest request = new UnityWebRequest(iaConfig.urlModelo, "POST"))
+        using (UnityWebRequest request = new UnityWebRequest(iaConfig.urlModeloCasos, "POST"))
         {
             request.uploadHandler = new UploadHandlerRaw(bodyRaw);
             request.downloadHandler = new DownloadHandlerBuffer();
             request.SetRequestHeader("Content-Type", "application/json");
-            request.timeout = 15; // 15 segundos timeout
+            request.timeout = Mathf.RoundToInt(iaConfig.tiempoTimeout); // Usar timeout configurado (por defecto 30s)
 
             var operacion = request.SendWebRequest();
             while (!operacion.isDone) await Task.Yield();

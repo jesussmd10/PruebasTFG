@@ -21,4 +21,4 @@ MonoBehaviour:
     tu inocencia.
   tagPista: '[PISTA]'
   maxReintentos: 3
-  tiempoTimeout: 10
+  tiempoTimeout: 30

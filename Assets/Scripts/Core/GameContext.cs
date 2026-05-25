@@ -24,6 +24,8 @@ public class GameContext : MonoBehaviour
     private CasoDelito delitoActual;
     public CasoDelito DelitoActual => delitoActual;
 
+    public static CasoDelito CasoPrecargado { get; set; }
+
     public bool EsCulpable => esCulpable;
     public float TiempoPartida => tiempoPartida;
     public float TiempoRestante => tiempoRestante;

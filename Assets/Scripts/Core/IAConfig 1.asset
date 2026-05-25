@@ -12,18 +12,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0277978a954d3c94690b5d5d309dae50, type: 3}
   m_Name: IAConfig 1
   m_EditorClassIdentifier: Assembly-CSharp::IAConfig
-  urlModelo: http://localhost:1234/v1/chat/completions
-  nombreModelo: llama-3.2-3b-instruct-abliterated
-  temperatura: 0.8
-  usarStreaming: 1
+  urlModeloCasos: http://localhost:1234/v1/chat/completions
+  nombreModeloCasos: llama-3.2-3b-instruct-abliterated
+  temperaturaCasos: 0.8
+  urlModeloDialogo: http://localhost:1234/v1/chat/completions
+  nombreModeloDialogo: llama-3.2-1b-instruct-abliterated3
+  temperaturaDialogo: 0.7
+  usarStreaming: 0
   maxTokensRespuesta: 150
-  maxTokensCaso: 350
+  maxTokensCaso: 512
   maxMensajesHistorial: 10
-  ttsProvider: 2
+  ttsProvider: 0
   ttsApiKey: 0f4d01eb7b2cf29c590a32b6d4f031b721f684b194a5ca0f39131cece6270072
   ttsVoiceId: pNInz6obpgDQGcFmaJgB
   promptCulpable: Eres Alex, un sospechoso CULPABLE. Debes mentir e inventar excusas.
   promptInocente: Eres Alex, un sospechoso INOCENTE. Defiende tu inocencia.
   tagPista: '[PISTA]'
   maxReintentos: 3
-  tiempoTimeout: 10
+  tiempoTimeout: 30
