@@ -19,72 +19,125 @@ public class CaseGenerator : MonoBehaviour
     // Casos de fallback (los originales hardcodeados) - pool ampliado
     private static readonly GameContext.CasoDelito[] casosFallback = new GameContext.CasoDelito[]
     {
-        new GameContext.CasoDelito { ID = "042", TituloFolio = "ROBO EN JOYERÍA", DescripcionFolio = "Atraco a mano armada en la joyería central y robo de diamantes.", DescripcionPrompt = "un atraco a mano armada en la joyería del centro donde se robaron diamantes", Coartada = "en un bar local tomando algo solo", Actitud = "Estás aterrado, tartamudeas mucho y casi lloras." },
-        new GameContext.CasoDelito { ID = "087", TituloFolio = "ASESINATO", DescripcionFolio = "Homicidio en primer grado en el callejón trasero del club.", DescripcionPrompt = "el brutal asesinato de una persona en un callejón oscuro detrás de una discoteca", Coartada = "paseando a tu perro por un parque cercano", Actitud = "Te muestras a la defensiva, un poco borde e indignado de estar allí." },
-        new GameContext.CasoDelito { ID = "104", TituloFolio = "SECUESTRO", DescripcionFolio = "Secuestro y desaparición forzada del hijo de un empresario.", DescripcionPrompt = "el secuestro del hijo de un empresario local pidiendo un rescate millonario", Coartada = "trabajando hasta tarde en tu oficina", Actitud = "Intentas hacerte el simpático y usas sarcasmo para ocultar tu enorme nerviosismo." },
-        new GameContext.CasoDelito { ID = "019", TituloFolio = "INCENDIO PROVOCADO", DescripcionFolio = "Incendio intencionado en un edificio de oficinas del centro.", DescripcionPrompt = "haber provocado intencionadamente un incendio que destruyó un edificio de oficinas", Coartada = "en casa de un amigo jugando a videojuegos", Actitud = "Hablas excesivamente rápido, dando detalles inútiles porque entraste en pánico." },
-        new GameContext.CasoDelito { ID = "055", TituloFolio = "AGRESIÓN GRAVE", DescripcionFolio = "Asalto con violencia extrema a un transeúnte la pasada noche.", DescripcionPrompt = "haber agredido violentamente a una persona en el parque de madrugada", Coartada = "durmiendo en tu coche tras discutir con tu pareja", Actitud = "Eres muy tímido, respondes con frases cortísimas y miras mucho al suelo." },
-        new GameContext.CasoDelito { ID = "092", TituloFolio = "TRÁFICO DE DROGAS", DescripcionFolio = "Venta y distribución ilegal de sustancias en el barrio sur.", DescripcionPrompt = "vender drogas ilegales en el barrio sur de la ciudad", Coartada = "haciendo la compra en el supermercado nocturno", Actitud = "Estás muy nervioso, no paras de mover las manos y de sudar." },
-        new GameContext.CasoDelito { ID = "033", TituloFolio = "ESTAFA BANCARIA", DescripcionFolio = "Fraude informático contra clientes de varias entidades bancarias.", DescripcionPrompt = "una estafa informática que robó los ahorros de decenas de personas", Coartada = "cenando con tu madre en su casa", Actitud = "Te muestras frío y calculador, hablas con mucha calma sospechosa." },
-        new GameContext.CasoDelito { ID = "071", TituloFolio = "ROBO A MANO ARMADA", DescripcionFolio = "Atraco con arma de fuego a una gasolinera a las 3 de la madrugada.", DescripcionPrompt = "el atraco con pistola a una gasolinera de madrugada", Coartada = "viendo una película solo en el cine", Actitud = "Estás furioso por estar detenido, gritas e insultas constantemente." },
-        new GameContext.CasoDelito { ID = "118", TituloFolio = "EXTORSION", DescripcionFolio = "Amenazas y chantaje a un comerciante del barrio para cobrar proteccion.", DescripcionPrompt = "extorsionar y amenazar a comerciantes del barrio para cobrarles proteccion", Coartada = "jugando al futbol con unos amigos en el polideportivo", Actitud = "Sonries de forma arrogante y actuas como si todo fuera una broma." },
-        new GameContext.CasoDelito { ID = "066", TituloFolio = "VANDALISMO GRAVE", DescripcionFolio = "Destruccion masiva de mobiliario urbano y vehiculos aparcados.", DescripcionPrompt = "haber destrozado coches y mobiliario urbano en una noche de vandalismo", Coartada = "en casa durmiendo porque tenias fiebre", Actitud = "Pareces confuso y desorientado, como si no entendieras que haces aqui." },
+        new GameContext.CasoDelito { ID = "042", TituloFolio = "ROBO EN EL MUSEO", DescripcionFolio = "Robo de un diamante maldito durante una gala de disfraces.", DescripcionPrompt = "un atraco en el museo de arte moderno donde se robó un diamante maldito durante una gala", Coartada = "encerrado accidentalmente en el baño de un restaurante tailandés", Actitud = "Estás absolutamente paranoico, miras a todos lados y sudas profusamente.", SecretoCulpable = "El diamante lo tienes escondido en el zapato izquierdo.", SecretoInocente = "En realidad fuiste al restaurante para espiar a tu ex-pareja." },
+        new GameContext.CasoDelito { ID = "087", TituloFolio = "ENVENENAMIENTO", DescripcionFolio = "Asesinato por envenenamiento con pudin en el asilo de ancianos.", DescripcionPrompt = "el envenenamiento de un millonario usando pudin de chocolate caducado en un asilo", Coartada = "participando en una sesión de espiritismo clandestina", Actitud = "Eres increíblemente sarcástico, usas humor negro y te burlas del detective.", SecretoCulpable = "Compraste el veneno por internet usando la tarjeta de tu abuela.", SecretoInocente = "En la sesión de espiritismo estabas intentando contactar a tu hámster muerto." },
+        new GameContext.CasoDelito { ID = "104", TituloFolio = "SECUESTRO VIRTUAL", DescripcionFolio = "Secuestro de un famoso Youtuber mientras emitía en directo.", DescripcionPrompt = "el secuestro de un youtuber famoso irrumpiendo en su mansión en pleno directo", Coartada = "haciendo cosplay de Batman en tu habitación grabando TikToks", Actitud = "Tienes aires de grandeza, eres pedante y te sientes profundamente insultado.", SecretoCulpable = "Se te cayó tu móvil personal en la casa del Youtuber.", SecretoInocente = "Los TikToks que grababas eran bailando canciones infantiles en pijama." },
+        new GameContext.CasoDelito { ID = "019", TituloFolio = "SABOTAJE ANIMAL", DescripcionFolio = "Liberación ilegal de pingüinos pigmeos en el puerto de la ciudad.", DescripcionPrompt = "haber liberado cien pingüinos pigmeos de un carguero en el puerto", Coartada = "perdido en el bosque persiguiendo a lo que creías que era un chupacabras", Actitud = "Estás en estado de negación absoluta, al borde del colapso nervioso y lloriqueando.", SecretoCulpable = "Aún tienes un pingüino escondido en la bañera de tu casa.", SecretoInocente = "No estabas en el bosque, estabas robando wifi en un McDonald's a esa hora." },
+        new GameContext.CasoDelito { ID = "055", TituloFolio = "AGRESIÓN FRIKI", DescripcionFolio = "Agresión con sables láser de juguete en la convención de cómics.", DescripcionPrompt = "haber agredido violentamente al organizador de una convención de cómics usando réplicas de sables láser", Coartada = "en una cita a ciegas desastrosa con alguien que se hacía llamar 'El Rey Lagarto'", Actitud = "Eres el típico cuñado sabelotodo, interrumpes constantemente al detective para explicarle cómo hacer su trabajo.", SecretoCulpable = "Rompiste tu propio sable láser al golpear a la víctima.", SecretoInocente = "En tu cita a ciegas te dejaron plantado y te pusiste a llorar en el baño." },
+        new GameContext.CasoDelito { ID = "092", TituloFolio = "FALSIFICACIÓN", DescripcionFolio = "Falsificación de obras de arte contemporáneo usando macarrones con queso.", DescripcionPrompt = "una estafa vendiendo cuadros falsos de Picasso hechos de macarrones con queso y pintura", Coartada = "intentando robar Wi-Fi de la cafetería de enfrente desde el maletero de tu coche", Actitud = "Eres extremadamente seductor y manipulador, intentando coquetear con el detective con calma perturbadora.", SecretoCulpable = "Usaste macarrones de la marca 'Buitoni' para el cuadro principal.", SecretoInocente = "Estabas en el maletero porque le debías dinero a un prestamista y te estabas escondiendo." }
     };
 
-    private static readonly string[] tematicas = new string[]
-    {
-        "un ASESINATO MACABRO en un callejón oscuro",
-        "un CASO ABSURDO sobre el robo de una mascota famosa",
-        "un SECUESTRO de un político importante",
-        "un CRIMEN BIZARRO en un laboratorio clandestino",
-        "un ATRACO VIOLENTO a un banco central",
-        "un SABOTAJE en una fábrica de tecnología militar"
-    };
+    private enum NivelInteligencia { Simple, Medio, Complejo }
 
-    private static readonly string[] actitudes = new string[]
+    private NivelInteligencia ObtenerNivelInteligencia(string nombreModelo)
     {
-        "Estás aterrado, lloras a lágrima viva y tartamudeas.",
-        "Eres frío como el hielo, calculador y un poco psicópata.",
-        "Eres arrogante, chulo, y te ríes del detective.",
-        "Estás a la defensiva, muy enfadado y ofendido.",
-        "Pareces confundido, desorientado y algo torpe.",
-        "Estás extremadamente nervioso, sudando y moviendo las manos."
-    };
+        if (string.IsNullOrEmpty(nombreModelo)) return NivelInteligencia.Medio;
+        string nombre = nombreModelo.ToLower();
+        if (nombre.Contains("1b") || nombre.Contains("2b") || nombre.Contains("tiny") || nombre.Contains("qwen1.5-0.5b") || nombre.Contains("mini"))
+            return NivelInteligencia.Simple;
+        else if (nombre.Contains("7b") || nombre.Contains("8b") || nombre.Contains("14b") || nombre.Contains("32b") || nombre.Contains("70b"))
+            return NivelInteligencia.Complejo;
+        else
+            return NivelInteligencia.Medio;
+    }
 
-    private static readonly string[] coartadas = new string[]
+    private static string ObtenerPromptDinamico(NivelInteligencia inteligencia)
     {
-        "viendo una película solo en el cine de la calle Mayor",
-        "comprando leche y cereales en el supermercado 24h",
-        "durmiendo en casa de un amigo después de una fiesta",
-        "haciendo horas extra en tu oficina, solo frente al ordenador",
-        "cenando en un restaurante barato a las afueras de la ciudad",
-        "paseando a tu perro por el parque central, sin ver a nadie"
-    };
-
-    private static string ObtenerPromptDinamico()
-    {
-        string tema = tematicas[Random.Range(0, tematicas.Length)];
-        string actitud = actitudes[Random.Range(0, actitudes.Length)];
-        string coartada = coartadas[Random.Range(0, coartadas.Length)];
-        
-        return $@"Eres un generador de datos policiales. Debes devolver ÚNICAMENTE un objeto JSON válido.
+        string prompt = @"Eres un generador de datos policiales. Debes devolver ÚNICAMENTE un objeto JSON válido.
 No escribas introducciones, no uses markdown. SOLO JSON. Escribe en perfecto español.
 
 INSTRUCCIONES DE GENERACIÓN:
-Tienes que crear los detalles de este caso concreto:
-- CRIMEN OBLIGATORIO: {tema}
-- COARTADA DEL SOSPECHOSO: {coartada}
-- ACTITUD DEL SOSPECHOSO: {actitud}
+Tienes que INVENTAR un caso policial, una coartada para el sospechoso y una personalidad/actitud para él.
+";
 
-El JSON debe tener EXACTAMENTE este formato y claves:
-{{
-  ""id"": ""123"",
-  ""titulo"": ""TÍTULO DEL CRIMEN EN MAYÚSCULAS"",
-  ""descripcionFolio"": ""Resumen de una línea del delito para el expediente."",
-  ""descripcionPrompt"": ""La descripción detallada del crimen que cometió."",
-  ""coartada"": ""{coartada}"",
-  ""actitud"": ""{actitud}""
-}}";
+        if (inteligencia == NivelInteligencia.Simple)
+        {
+            prompt += @"
+REGLAS PARA EL CASO (NIVEL BÁSICO):
+- Inventa un crimen muy común (robo, pelea, estafa).
+- Inventa una coartada (normal o peculiar, pero siempre creíble y relacionada con el contexto, lugar u hora del crimen).
+- Inventa una actitud básica (nervioso, enfadado, triste).
+- Sigue exactamente la estructura de estos ejemplos. IMPORTANTE: Todo debe estar relacionado. El `secretoCulpable` es un detalle clave que lo incrimina. El `secretoInocente` explica por qué mintió en su coartada falsa (por vergüenza o miedo) pero lo desvincula del crimen.
+
+EJEMPLO 1:
+{
+  ""id"": ""001"",
+  ""titulo"": ""ROBO DE COCHE"",
+  ""descripcionFolio"": ""Robo de un vehículo sedán rojo en el aparcamiento."",
+  ""descripcionPrompt"": ""el robo de un coche sedán rojo en el aparcamiento del supermercado"",
+  ""coartada"": ""durmiendo en casa de mi hermano"",
+  ""actitud"": ""Estás muy asustado y lloras."",
+  ""secretoCulpable"": ""Robaste el coche a las 03:00 de la mañana rompiendo el cristal."",
+  ""secretoInocente"": ""Tu hermano no estaba en casa, estabas durmiendo en un banco del parque.""
+}
+
+EJEMPLO 2:
+{
+  ""id"": ""002"",
+  ""titulo"": ""PELEA EN EL BAR"",
+  ""descripcionFolio"": ""Agresión física a un camarero en el bar central."",
+  ""descripcionPrompt"": ""una agresión violenta al camarero del bar central lanzándole una botella"",
+  ""coartada"": ""paseando a mi perro en el parque"",
+  ""actitud"": ""Estás a la defensiva y cruzas los brazos."",
+  ""secretoCulpable"": ""Le lanzaste una botella de ron añejo."",
+  ""secretoInocente"": ""No estabas paseando al perro, estabas comprando droga en el parque.""
+}
+
+AHORA GENERA UN JSON CON UN CASO COMPLETAMENTE INVENTADO POR TI:
+";
+        }
+        else if (inteligencia == NivelInteligencia.Complejo)
+        {
+            prompt += @"
+REGLAS PARA EL CASO (NIVEL EXPERTO):
+- Inventa crímenes extremadamente originales, bizarros, cinematográficos o complejos (ej: robo de reliquias, cibercrímenes extraños, crímenes pasionales rocambolescos).
+- Inventa coartadas detalladas. La coartada DEBE estar inteligentemente conectada con los elementos del caso (lugar, hora, personas implicadas).
+- Inventa actitudes que sean perfiles psicológicos muy complejos (ej: narcisista pedante, manipulador seductor, cuñado sabelotodo, místico zen, paranoico de conspiraciones).
+- Inventa 2 secretos locos o bizarros, PERO con PERFECTO SENTIDO LÓGICO. Todo debe estar entrelazado como un puzle intuitivo: El `secretoCulpable` es la prueba irrefutable de que cometió el crimen. El `secretoInocente` es la razón embarazosa/ilegal por la que mintió en su coartada, lo cual demuestra que no es el asesino/ladrón.
+- NO COPIES los ejemplos, úsalos solo como inspiración para ver el formato JSON. ¡Sé totalmente creativo!
+
+EJEMPLO DE INSPIRACIÓN:
+{
+  ""id"": ""888"",
+  ""titulo"": ""FALSIFICACIÓN BIZARRA"",
+  ""descripcionFolio"": ""Falsificación de obras de arte usando macarrones con queso."",
+  ""descripcionPrompt"": ""una estafa internacional vendiendo cuadros de Picasso falsos hechos de macarrones con queso"",
+  ""coartada"": ""en una cita a ciegas desastrosa con alguien que se hacía llamar 'El Rey Lagarto'"",
+  ""actitud"": ""Eres increíblemente sarcástico, usas humor negro y te burlas del detective constantemente."",
+  ""secretoCulpable"": ""El pegamento que usaste para los macarrones era de la marca SuperGlue."",
+  ""secretoInocente"": ""En la cita a ciegas te pusiste a llorar porque te acordaste de tu ex.""
+}
+
+AHORA GENERA UN JSON CON UN CASO COMPLETAMENTE NUEVO, ÚNICO, ORIGINAL Y CREATIVO:
+";
+        }
+        else // Medio
+        {
+            prompt += @"
+REGLAS PARA EL CASO (NIVEL MEDIO):
+- Inventa crímenes variados: algunos cotidianos y otros más curiosos.
+- Inventa coartadas concretas (normales o locas, pero creíbles y siempre conectadas al contexto del crimen).
+- Inventa actitudes variadas (sarcástico, confundido, chulo, asustado).
+- Inventa dos secretos: Todo debe estar muy bien atado para que el jugador pueda deducir. El `secretoCulpable` oculta una prueba directa del crimen. El `secretoInocente` oculta la verdadera razón de su coartada falsa (un motivo vergonzoso) demostrando su inocencia en el caso.
+- Usa este ejemplo como guía para el formato JSON, pero cambia completamente la temática.
+
+EJEMPLO:
+{
+  ""id"": ""055"",
+  ""titulo"": ""SABOTAJE TECNOLÓGICO"",
+  ""descripcionFolio"": ""Infección de virus en la red del ayuntamiento."",
+  ""descripcionPrompt"": ""haber introducido un virus que borró los archivos del ayuntamiento"",
+  ""coartada"": ""jugando a un torneo de videojuegos online en mi cuarto"",
+  ""actitud"": ""Te muestras arrogante y miras con desprecio al detective."",
+  ""secretoCulpable"": ""Introdujiste el virus usando un pendrive con forma de pato."",
+  ""secretoInocente"": ""Estabas jugando al Barbie Horse Adventures, no a un torneo de videojuegos.""
+}
+
+AHORA GENERA UN JSON CON UN CASO INVENTADO POR TI:
+";
+        }
+
+        return prompt;
     }
 
     /// <summary>
@@ -136,9 +189,11 @@ El JSON debe tener EXACTAMENTE este formato y claves:
 
     private async Task<string> EnviarPeticion()
     {
+        NivelInteligencia inteligencia = ObtenerNivelInteligencia(iaConfig?.nombreModeloCasos);
+        
         var messages = new List<object>
         {
-            new { role = "user", content = ObtenerPromptDinamico() }
+            new { role = "user", content = ObtenerPromptDinamico(inteligencia) }
         };
 
         // Usamos un mínimo de 512 tokens para asegurar que el JSON detallado no se corte
@@ -243,6 +298,8 @@ El JSON debe tener EXACTAMENTE este formato y claves:
             string descripcionPrompt = ObtenerCampo(json, "descripcionPrompt", "descripcion_prompt", "prompt", "descripcionCrimen");
             string coartada = ObtenerCampo(json, "coartada", "Coartada", "alibi", "excusa");
             string actitud = ObtenerCampo(json, "actitud", "Actitud", "attitude", "comportamiento", "emocion");
+            string secCulpable = ObtenerCampo(json, "secretoCulpable", "secreto_culpable");
+            string secInocente = ObtenerCampo(json, "secretoInocente", "secreto_inocente");
 
             // 5. Validaciones mínimas (muy permisivas)
             if (string.IsNullOrWhiteSpace(titulo))
@@ -274,7 +331,9 @@ El JSON debe tener EXACTAMENTE este formato y claves:
                 DescripcionFolio = descripcionFolio.Trim(),
                 DescripcionPrompt = descripcionPrompt.Trim(),
                 Coartada = coartada.Trim(),
-                Actitud = actitud.Trim()
+                Actitud = actitud.Trim(),
+                SecretoCulpable = secCulpable?.Trim() ?? "El crimen se cometió a una hora muy concreta que nadie te ha dicho.",
+                SecretoInocente = secInocente?.Trim() ?? "Estabas haciendo algo muy vergonzoso en tu coartada y no quieres decirlo."
             };
         }
         catch (System.Exception ex)

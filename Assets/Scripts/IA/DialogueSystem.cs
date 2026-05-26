@@ -16,6 +16,7 @@ public class DialogueSystem : MonoBehaviour
     [SerializeField] private IAConfig iaConfig;
     private List<object> historialDialogo = new List<object>();
     private bool memoriaIniciada = false;
+    private GameContext.CasoDelito casoActual;
 
     /// <summary>
     /// Indica si el sistema de streaming está activo (para que otros scripts sepan).
@@ -49,8 +50,24 @@ public class DialogueSystem : MonoBehaviour
         // Despachar frases completas para TTS
         while (colaFrasesParaTTS.TryDequeue(out var frase))
         {
+            // Limpiar tartamudeos con guión que el TTS lee mal (ej: "N-no" -> "no", "P-pero" -> "pero")
+            frase = System.Text.RegularExpressions.Regex.Replace(frase, @"(?i)\b[a-zñáéíóú]-", "");
             EventSystem.OnFraseListaParaTTS.Invoke(frase);
         }
+    }
+
+    private enum NivelInteligencia { Simple, Medio, Complejo }
+
+    private NivelInteligencia ObtenerNivelInteligencia(string nombreModelo)
+    {
+        if (string.IsNullOrEmpty(nombreModelo)) return NivelInteligencia.Medio;
+        
+        string m = nombreModelo.ToLower();
+        if (m.Contains("-1b") || m.Contains("-2b") || m.Contains("1.5b") || m.Contains("tiny")) return NivelInteligencia.Simple;
+        if (m.Contains("-3b") || m.Contains("-4b") || m.Contains("mini") || m.Contains("phi-3")) return NivelInteligencia.Medio;
+        if (m.Contains("-7b") || m.Contains("-8b") || m.Contains("-9b") || m.Contains("llama-3")) return NivelInteligencia.Complejo;
+        
+        return NivelInteligencia.Medio; // Por defecto
     }
 
     /// <summary>
@@ -59,49 +76,147 @@ public class DialogueSystem : MonoBehaviour
     /// </summary>
     public void InicializarPersonalidad(bool esCulpable, GameContext.CasoDelito caso)
     {
+        casoActual = caso;
+        NivelInteligencia inteligencia = ObtenerNivelInteligencia(iaConfig?.nombreModeloDialogo);
+
         string prompt = $@"
 [ROL]
 Personaje: Alex (28 años).
 Situación: Interrogatorio policial en la comisaría. Estás siendo interrogado por un detective.
 Actitud: {caso.Actitud}
-
-[REGLAS DE DIÁLOGO]
-- RESPUESTA DIRECTA: Escucha al detective y responde de forma coherente a su última pregunta.
-- IDIOMA: Español NATIVO de España. (Ejemplo: di 'soy inocente', nunca 'estoy inocente').
-- NO IA: Nunca hables como un asistente artificial. Eres un humano.
-- EXPRESIÓN CORPORAL: Al principio de cada frase pon entre paréntesis cómo te mueves. Ejemplos obligatorios: (niega), (tiembla), (se calma).
-- LA COARTADA: NUNCA repitas tu coartada constantemente a menos que te pregunten directamente.
 ";
 
-        if (esCulpable)
+        // --- REGLAS SEGÚN INTELIGENCIA ---
+        if (inteligencia == NivelInteligencia.Simple)
         {
             prompt += $@"
+[REGLAS MUY SIMPLES]
+- Responde muy corto, con frases sencillas y directas. NO TE QUEDES A MEDIAS, termina siempre tu frase con un punto.
+- IDIOMA: Español coloquial y vulgar de la calle en España. Usa palabras como ""joder"", ""coño"", ""tío"", ""mierda"" si pega con tu actitud. NUNCA uses traducciones raras del inglés. PROHIBIDO decir ""estoy inocente"" o ""no soy inocente"". Di siempre ""SOY INOCENTE"". NUNCA tartamudees con guiones (N-no).
+- No uses lenguaje artificial ni poético. Eres un humano normal de la calle.
+- NO inventes cosas raras. Cíñete siempre a tu coartada.
+";
+        }
+        else if (inteligencia == NivelInteligencia.Complejo)
+        {
+            prompt += $@"
+[REGLAS DE ACTUACIÓN PROFUNDA]
+- RESPUESTA INMERSIVA: Responde de forma extremadamente humana y orgánica. Usa muletillas, pausas, dudas o sarcasmo si encaja con tu actitud.
+- LONGITUD Y CIERRE: Tus respuestas no deben ser eternas. IMPORTANTE: NUNCA te quedes a medias. Termina siempre tus frases correctamente con un punto.
+- IDIOMA: Español extremadamente coloquial, vulgar y de barrio de España. Eres de la calle. Usa tacos de forma natural (""joder"", ""hostia"", ""tío"", ""mierda"", ""coño"", ""puto"") adaptándolos a lo cabreado o chulo que seas. NUNCA suenes como un texto traducido. NUNCA uses guiones para tartamudear (ej: N-no), usa puntos suspensivos (No... no...).
+  * PROHIBIDO ABSOLUTO: Decir ""estoy inocente"" o ""no soy inocente"". Gramaticalmente es incorrecto. Tienes que decir ""SOY INOCENTE"" o ""Yo no fui"".
+  * BIEN: ""¡Esto es una puta locura! Te lo juro, yo estaba... ¡Soy inocente, joder!""
+  Usa expresiones naturales españolas como ""mira"", ""a ver"", ""¿qué me estás contando?"".
+- PERSONALIDAD COMPLEJA: Adapta tu lenguaje a tu actitud ({caso.Actitud}). Si estás a la defensiva, contraataca verbalmente. Si estás aterrado, tropieza con tus propias palabras.
+- DINÁMICA: Defiende tu historia con uñas y dientes, pero permite que el detective encuentre fallos lógicos si te presiona de forma brillante o te pilla en un renuncio.
+";
+        }
+        else // Medio
+        {
+            prompt += $@"
+[REGLAS DE DIÁLOGO]
+- RESPUESTA DIRECTA: Escucha al detective y responde de forma coherente a su última pregunta.
+- LONGITUD Y CIERRE: Controla tu longitud. IMPORTANTE: NUNCA dejes frases a medias. Termina siempre tus oraciones con un punto.
+- IDIOMA: Español coloquial, vulgar y de barrio de España. Usa tacos (""joder"", ""tío"", ""mierda"", ""coño"", ""hostia"") si encaja con tu personalidad. PROHIBIDO usar gramática inglesa. PROHIBIDÍSIMO decir ""estoy inocente"" o ""no soy inocente"". Siempre di ""SOY INOCENTE"". NUNCA uses guiones para tartamudear (ej: N-no), repite la palabra (ej: No... no...).
+- NO IA: Nunca hables como un asistente artificial. Eres un humano.
+- LA COARTADA: NUNCA repitas tu coartada constantemente a menos que te pregunten directamente.
+";
+        }
+
+        // --- ROL CULPABLE / INOCENTE SEGÚN INTELIGENCIA ---
+        if (esCulpable)
+        {
+            if (inteligencia == NivelInteligencia.Simple)
+            {
+                prompt += $@"
+[MEMORIA: CULPABLE]
+- TÚ COMETISTE ESTE CRIMEN: {caso.DescripcionPrompt}.
+- SECRETO DEL CRIMEN: {caso.SecretoCulpable}. NUNCA LO DIGAS a menos que te pongas muy nervioso.
+- Tu coartada FALSA es que estabas: {caso.Coartada}.
+- Tienes que MENTIR e intentar que no te descubran. Si el detective te grita o descubre tu mentira, te pones muy nervioso y confiesas o te contradices de forma obvia.
+";
+            }
+            else if (inteligencia == NivelInteligencia.Complejo)
+            {
+                prompt += $@"
+[MEMORIA DEL PERSONAJE: CULPABLE]
+- VERDAD OCULTA: Tú cometiste el crimen a sangre fría ({caso.DescripcionPrompt}).
+- SECRETO CRÍTICO: {caso.SecretoCulpable}. Este es un detalle vital que te incrimina. ¡NUNCA lo digas! Si el detective te grita o acorrala y tienes actitud nerviosa, se te puede escapar. Si eres chulo, no lo dirás nunca.
+- MENTIRA SOFISTICADA: Tu coartada FALSA e inventada es que estabas {caso.Coartada}.
+- ESTRATEGIA MENTAL: Miente con convicción absoluta. Intenta manipular psicológicamente al detective para que te crea.
+- CAÍDA DEL PERSONAJE: Solo si el detective te acorrala con pruebas, te pilla en una contradicción evidente o te presiona de forma psicológicamente intensa, empezarás a mostrar fisuras sutiles en tu historia, sudarás, dudarás o te pondrás a la defensiva revelando tu SECRETO CRÍTICO. Haz que el detective se gane la confesión o la pista.
+";
+            }
+            else // Medio
+            {
+                prompt += $@"
 [MEMORIA DEL PERSONAJE: CULPABLE]
 - VERDAD OCULTA: Tú cometiste el crimen ({caso.DescripcionPrompt}).
+- SECRETO CRÍTICO: {caso.SecretoCulpable}. Oculta esto a toda costa.
 - MENTIRA: Tu coartada FALSA es que estabas {caso.Coartada}.
 - OBJETIVO: Tienes que mentir para salvarte.
-- ESTRATEGIA: Al principio mientes muy bien y defiendes tu coartada. Pero si el detective te presiona, te grita o te arrincona lógicamente, te pones nervioso. Tu historia empezará a desmoronarse lentamente y puedes contradecirte o dar pistas sutiles, pero intenta que no sea demasiado obvio ni demasiado fácil para el detective.
+- ESTRATEGIA: Al principio mientes muy bien y defiendes tu coartada. Pero si el detective te presiona, te grita o te arrincona lógicamente, te pones nervioso. Tu historia empezará a desmoronarse lentamente y puedes contradecirte o revelar tu SECRETO CRÍTICO.
 ";
+            }
+
             if (iaConfig != null && !string.IsNullOrEmpty(iaConfig.promptCulpable)) 
                 prompt += "- NOTA EXTRA: " + iaConfig.promptCulpable + "\n";
         }
         else
         {
-            prompt += $@"
+            if (inteligencia == NivelInteligencia.Simple)
+            {
+                prompt += $@"
+[MEMORIA: INOCENTE]
+- Tú ERES INOCENTE del crimen: {caso.DescripcionPrompt}.
+- SECRETO VERGONZOSO: {caso.SecretoInocente}. Te da mucha vergüenza que se sepa esto.
+- Tu coartada FALSA para ocultar tu secreto es que estabas: {caso.Coartada}.
+- Miente sobre tu coartada al principio, pero si te gritan mucho confiesa tu SECRETO VERGONZOSO.
+";
+            }
+            else if (inteligencia == NivelInteligencia.Complejo)
+            {
+                prompt += $@"
+[MEMORIA DEL PERSONAJE: INOCENTE]
+- VERDAD INMUTABLE: Eres 100% INOCENTE de: {caso.DescripcionPrompt}.
+- SECRETO VERGONZOSO: {caso.SecretoInocente}. Esto es lo que realmente estabas haciendo. Te da pánico o mucha vergüenza que la policía o tu familia lo descubra, por lo que decides mentir al principio.
+- COARTADA TAPADERA: Tu coartada inicial, que usarás como tapadera para ocultar tu secreto, es que estabas {caso.Coartada}.
+- ESTRATEGIA EMOCIONAL: Actuarás de forma sospechosa y a la defensiva porque tienes miedo de que descubran tu secreto vergonzoso, lo que te hace parecer culpable del asesinato aunque no lo seas. Si el detective es muy agresivo, te grita o te acorrala, el pánico te hará tartamudear y acabarás confesando tu SECRETO VERGONZOSO (soltando una pista), limpiándote así del cargo de asesinato.
+";
+            }
+            else // Medio
+            {
+                prompt += $@"
 [MEMORIA DEL PERSONAJE: INOCENTE]
 - VERDAD: Eres totalmente INOCENTE de: {caso.DescripcionPrompt}.
-- COARTADA REAL: Tu coartada VERDADERA es que estabas {caso.Coartada}.
-- ESTRATEGIA: Dices siempre la verdad. NUNCA te desvíes de tu coartada ni te la inventes. Mantenla siempre firme.
-- DEBILIDAD: Tienes miedo a ir a prisión. SÓLO si el detective te grita, te insulta o te pone contra las cuerdas de forma muy agresiva, los nervios te traicionarán y empezarás a dudar de ti mismo, a tartamudear o a confundir pequeños detalles por el pánico, pero sigues siendo inocente.
+- SECRETO: {caso.SecretoInocente}. Como te da mucha vergüenza que se sepa esto, decides mentir en tu coartada inicial.
+- COARTADA TAPADERA: Al principio dirás que estabas {caso.Coartada}.
+- ESTRATEGIA: Miente al principio para proteger tu secreto. Si el detective te grita, te insulta o te presiona, te derrumbarás y acabarás confesando tu SECRETO (soltando una pista).
 ";
+            }
+
             if (iaConfig != null && !string.IsNullOrEmpty(iaConfig.promptInocente)) 
                 prompt += "- NOTA EXTRA: " + iaConfig.promptInocente + "\n";
         }
 
         prompt += $@"
+[SISTEMA DE ANIMACIONES (ESTRICTO)]
+Para que tu cuerpo se mueva, DEBES incluir OBLIGATORIAMENTE un paréntesis de acción al inicio de tu respuesta.
+PROHIBIDO USAR MÁS DE UN PARÉNTESIS. Sólo puedes usar un paréntesis al principio, y luego texto normal.
+PROHIBIDO INVENTAR DESCRIPCIONES. DENTRO DEL PARÉNTESIS SÓLO PUEDES ESCRIBIR UNA DE ESTAS PALABRAS EXACTAS (sin añadir nada más):
+1. Para estar asustado/nervioso/furioso: (tiembla) o (nervioso) o (suda) o (llora) o (furioso) o (pánico).
+2. Para negar una acusación: (niega) o (rechaza).
+3. Para mostrarte sereno/relajado: (calma) o (respira) o (tranquilo) o (suspira).
+MAL: (pánico) ¡No fui yo! (niega) Soy inocente.
+MAL: (se frota la frente sudando) ¡No fui yo!
+BIEN: (nervioso) ¡No fui yo! Soy inocente, joder.
+Si escribes más texto dentro del paréntesis que no sea una de esas palabras sueltas, EL JUEGO SE ROMPERÁ.
+
 [SISTEMA DE JUEGO (TAG PISTA)]
-Si te contradices con algo que has dicho antes, si el detective te pilla en una mentira brutal, o si revelas algo que te incrimina, DEBES escribir obligatoriamente la palabra {iaConfig.tagPista} AL FINAL de tu respuesta.
-SÓLO úsalo para fallos graves en tu historia, NUNCA por simple nerviosismo.";
+Si te contradices con algo que has dicho antes, si revelas tu SECRETO (sea el criminal o el vergonzoso), o si revelas algún detalle vital que el detective no debería saber, DEBES escribir obligatoriamente un tag indicando tu error AL FINAL de tu respuesta, con este formato exacto: [PISTA: (breve descripción del fallo o secreto revelado)].
+Regla de oro: Escribe la descripción de la pista de forma neutral, objetiva y en tercera persona, como si fuera una nota del detective. NO escribas preguntas ni monólogos internos.
+Ejemplo: [PISTA: El sospechoso mencionó la hora exacta del asesinato sin que se lo hubieran dicho] o [PISTA: El sospechoso confesó que estaba mintiendo en su coartada porque estaba comprando drogas].
+SÓLO úsalo para fallos graves en tu historia o cuando reveles tu secreto, NUNCA por simple nerviosismo o si el detective solo te está insultando.";
 
         historialDialogo.Clear();
         historialDialogo.Add(new { role = "system", content = prompt });
@@ -141,10 +256,11 @@ SÓLO úsalo para fallos graves en tu historia, NUNCA por simple nerviosismo.";
         // Agregar contexto si el usuario grita
         if (usuarioGrita)
         {
+            string actitud = casoActual != null ? casoActual.Actitud : "asustado";
             historialDialogo.Add(new 
             { 
                 role = "system", 
-                content = "(El detective te acaba de GRITAR con mucha agresividad. Asústate mucho, tartamudea, tiembla y es muy probable que se te escape información por los nervios)" 
+                content = $"(El detective te acaba de GRITAR con mucha agresividad. Reacciona a este grito basándote estrictamente en tu personalidad: {actitud}. Si eres de perfil sumiso/miedoso, asústate mucho, tartamudea y tiembla. Si tu personalidad es sarcástica, pedante, chula o arrogante, ríete de él, enfádate o ponte a la defensiva agresivamente.)" 
             });
         }
 
@@ -171,7 +287,7 @@ SÓLO úsalo para fallos graves en tu historia, NUNCA por simple nerviosismo.";
         // Finalizar métricas
         if (resultado != null && LatencyMetrics.Instance != null)
         {
-            bool tienePista = resultado.IndexOf("[PISTA]", StringComparison.OrdinalIgnoreCase) >= 0;
+            bool tienePista = System.Text.RegularExpressions.Regex.IsMatch(resultado, @"\[PISTA[:\s]*", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
             LatencyMetrics.Instance.FinalizarMedicion(resultado, tienePista);
         }
 
@@ -223,6 +339,7 @@ SÓLO úsalo para fallos graves en tu historia, NUNCA por simple nerviosismo.";
             string resultado = await Task.Run(async () =>
             {
                 string textoAcumulado = "";
+                string bufferFrase = "";
 
                 var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
                 var request = new HttpRequestMessage(HttpMethod.Post, url);
@@ -255,10 +372,24 @@ SÓLO úsalo para fallos graves en tu historia, NUNCA por simple nerviosismo.";
                                     LatencyMetrics.Instance.RegistrarToken();
 
                                 textoAcumulado += delta;
+                                bufferFrase += delta;
+
+                                // Si la frase actual se considera completa (ej. punto y seguido), encolar y vaciar buffer
+                                if (EsFraseCompleta(bufferFrase))
+                                {
+                                    colaFrasesParaTTS.Enqueue(bufferFrase);
+                                    bufferFrase = "";
+                                }
                             }
                         }
                         catch { /* Ignorar chunks mal formados */ }
                     }
+                }
+
+                // Encolar cualquier texto residual que no haya terminado en punto
+                if (!string.IsNullOrWhiteSpace(bufferFrase))
+                {
+                    colaFrasesParaTTS.Enqueue(bufferFrase);
                 }
 
                 return textoAcumulado;
@@ -387,30 +518,29 @@ SÓLO úsalo para fallos graves en tu historia, NUNCA por simple nerviosismo.";
     private string GenerarRespuestaPreseed(GameContext.CasoDelito caso)
     {
         string actitud = caso.Actitud.ToLower();
-        string coartada = caso.Coartada;
 
         // Si la actitud denota miedo, nerviosismo o timidez
         if (actitud.Contains("aterrado") || actitud.Contains("nervio") || actitud.Contains("tímido") || actitud.Contains("miedo") || actitud.Contains("asustado") || actitud.Contains("pánico"))
         {
-            return $"(muy nervioso, tartamudeando) Mire, yo... yo no tengo nada que ver con eso. Estaba {coartada} cuando todo eso pasó, se lo juro por mi vida. No entiendo qué hago aquí.";
+            return $"(muy nervioso, tartamudeando) Mire, yo... yo no tengo nada que ver con eso. Se lo juro por mi vida. No entiendo qué hago aquí.";
         }
         // Si denota enfado, agresividad, bordería, furia, indignación o actitud desafiante
         else if (actitud.Contains("furioso") || actitud.Contains("indignado") || actitud.Contains("borde") || actitud.Contains("defensiva") || actitud.Contains("grita") || actitud.Contains("enfado") || actitud.Contains("desprecio") || actitud.Contains("sarcás") || actitud.Contains("sarcas"))
         {
-            return $"(golpea la mesa, con tono desafiante) ¡Escuche! Esto es una maldita broma. Yo no he hecho absolutamente nada. Estaba {coartada} en ese momento. ¡No tienen derecho a retenerme ni a acusarme!";
+            return $"(golpea la mesa, con tono desafiante) ¡Escuche! Esto es una maldita broma. Yo no he hecho absolutamente nada. ¡No tienen derecho a retenerme ni a acusarme!";
         }
         // Si denota arrogancia, frialdad, tranquilidad, ciencia o prepotencia
         else if (actitud.Contains("arrogante") || actitud.Contains("frío") || actitud.Contains("calma") || actitud.Contains("prepotencia") || actitud.Contains("científic") || actitud.Contains("calculador"))
         {
-            return $"(sonríe arrogantemente, con absoluta calma) Por favor, detective. Esto es una absoluta pérdida de tiempo. En el momento de los hechos, yo estaba tranquilamente {coartada}. No tienen ninguna base para tenerme aquí.";
+            return $"(sonríe arrogantemente, con absoluta calma) Por favor, detective. Esto es una absoluta pérdida de tiempo. No tienen ninguna base para tenerme aquí.";
         }
         // Si denota confusión o desorientación
         else if (actitud.Contains("confuso") || actitud.Contains("desorientado"))
         {
-            return $"(mira al suelo, confuso y desorientado) ¿Qué? No... no entiendo... yo no he hecho nada de eso... estaba {coartada}, de verdad. ¿Por qué me acusan a mí?";
+            return $"(mira al suelo, confuso y desorientado) ¿Qué? No... no entiendo... yo no he hecho nada de eso... ¿Por qué me acusan a mí?";
         }
         // Fallback genérico neutral
-        return $"(serio) Mire, no tengo ninguna relación con ese asunto. Estaba {coartada} en ese momento. Se están equivocando de persona.";
+        return $"(serio) Mire, no tengo ninguna relación con ese asunto. Se están equivocando de persona.";
     }
 
     // Clases para deserializar JSON de OpenAI-compatible

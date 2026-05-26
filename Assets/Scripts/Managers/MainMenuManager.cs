@@ -37,6 +37,7 @@ public class MainMenuManager : MonoBehaviour
 
     private GameContext.CasoDelito casoPreGenerado;
     private bool estaGenerando = false;
+    private AsyncOperation operacionCargaEscena;
 
     private void Start()
     {
@@ -75,6 +76,24 @@ public class MainMenuManager : MonoBehaviour
             textoEstadoMenu.text = casoPreGenerado != null ? "¡Sistemas listos! Pulsa Jugar." : "Error al precargar. Se generará al jugar.";
         
         estaGenerando = false;
+
+        // Iniciar la precarga en segundo plano de la escena del juego (VR)
+        PrecargarEscenaJuegoBackground();
+    }
+
+    private void PrecargarEscenaJuegoBackground()
+    {
+        if (operacionCargaEscena == null)
+        {
+            // Bajar la prioridad para que la precarga de la escena no dé tirones en el menú
+            Application.backgroundLoadingPriority = ThreadPriority.Low;
+            
+            operacionCargaEscena = SceneManager.LoadSceneAsync(nombreEscenaJuego);
+            if (operacionCargaEscena != null)
+            {
+                operacionCargaEscena.allowSceneActivation = false; // Detenemos la activación hasta darle al botón
+            }
+        }
     }
 
     private async Task PrecargarModeloDialogo()
@@ -175,17 +194,40 @@ public class MainMenuManager : MonoBehaviour
         if (modeloDialogoInput != null) iaConfig.nombreModeloDialogo = modeloDialogoInput.text;
     }
 
-    public void EmpezarJuego()
+    public async void EmpezarJuego()
     {
         GuardarPreferencias();
         AplicarAConfig();
 
-        // Guardamos el caso pregenerado en una variable estática para que la otra escena lo recoja
         if (casoPreGenerado != null)
         {
             GameContext.CasoPrecargado = casoPreGenerado;
         }
 
-        SceneManager.LoadScene(nombreEscenaJuego);
+        if (textoEstadoMenu != null)
+        {
+            textoEstadoMenu.text = "Transfiriendo a la sala de interrogatorios...";
+        }
+
+        // 1. Forzar recolección de basura ANTES de cambiar de escena
+        System.GC.Collect();
+        
+        // 2. Dar un pequeño respiro al hilo principal
+        await Task.Delay(200);
+
+        if (operacionCargaEscena != null)
+        {
+            // Restaurar prioridad normal de carga para que la activación sea lo más rápida posible
+            Application.backgroundLoadingPriority = ThreadPriority.High;
+            
+            // Activamos la escena pre-cargada
+            operacionCargaEscena.allowSceneActivation = true;
+        }
+        else
+        {
+            // Fallback por si la asíncrona falló
+            Application.backgroundLoadingPriority = ThreadPriority.High;
+            SceneManager.LoadScene(nombreEscenaJuego);
+        }
     }
 }

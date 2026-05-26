@@ -22,9 +22,9 @@ public class InterrogationManager : MonoBehaviour
 
     private async void Start()
     {
+        juegoActivo = true;
+        contenidoFolio = "";
 
-
-        
         if (panelVeredicto != null) panelVeredicto.SetActive(false);
 
         
@@ -192,12 +192,24 @@ public class InterrogationManager : MonoBehaviour
         // Log de la respuesta completa de la IA para depuración
         Debug.Log($"Respuesta IA completa: '{respuestaIA}'");
 
-        // Detectar y procesar pista (case-insensitive)
-        if (respuestaIA.IndexOf("[PISTA]", System.StringComparison.OrdinalIgnoreCase) >= 0)
+        // Detectar y procesar pista dinámica (e.g. [PISTA: Se contradijo con la hora])
+        string patronPista = @"\[PISTA[:\s]*(.*?)\]";
+        var matchPista = System.Text.RegularExpressions.Regex.Match(respuestaIA, patronPista, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        
+        if (matchPista.Success)
         {
             Debug.Log("¡PISTA DETECTADA en la respuesta!");
-            respuestaIA = respuestaIA.Replace("[PISTA]", "").Replace("[pista]", "").Replace("[Pista]", "").Trim();
-            GameContext.Instance.AñadirPista("El sospechoso se ha contradicho o reveló un dato clave.");
+            
+            string descripcionPista = matchPista.Groups[1].Value.Trim();
+            if (string.IsNullOrEmpty(descripcionPista) || descripcionPista.Length < 3)
+            {
+                descripcionPista = "El sospechoso se ha contradicho o reveló un dato clave.";
+            }
+            
+            GameContext.Instance.AñadirPista(descripcionPista);
+            
+            // Eliminar el tag de la respuesta para que no se escuche en TTS
+            respuestaIA = System.Text.RegularExpressions.Regex.Replace(respuestaIA, patronPista, "", System.Text.RegularExpressions.RegexOptions.IgnoreCase).Trim();
         }
         else
         {
@@ -265,7 +277,7 @@ public class InterrogationManager : MonoBehaviour
         ProcesarVeredictoJugador(false);
     }
 
-    private void ProcesarVeredictoJugador(bool eligioCulpable)
+    private async void ProcesarVeredictoJugador(bool eligioCulpable)
     {
         if (botonesEleccion != null)
         {
@@ -285,28 +297,49 @@ public class InterrogationManager : MonoBehaviour
             }
         }
 
-        if (botonReinicio != null) botonReinicio.SetActive(true);
+        // NO activar todavía el botón de reinicio
+        if (botonReinicio != null) botonReinicio.SetActive(false);
 
         bool eraCulpable = GameContext.Instance.EsCulpable;
         bool acerto = (eligioCulpable == eraCulpable);
+        var caso = GameContext.Instance.DelitoActual;
 
         if (textoResultadoVeredicto != null)
         {
-            if (acerto)
-            {
-                textoResultadoVeredicto.text = "<color=green>¡CASO RESUELTO CORRECTAMENTE!</color>\nFelicidades, has descubierto la verdad.";
-            }
-            else
-            {
-                string laVerdaderaCulpabilidad = eraCulpable ? "Culpable" : "Inocente";
-                textoResultadoVeredicto.text = $"<color=red>¡VEREDICTO INCORRECTO!</color>\nTe has equivocado. El sospechoso era {laVerdaderaCulpabilidad}.";
-            }
+            string resultadoTitulo = acerto 
+                ? "<size=150%><color=green>¡CASO RESUELTO CORRECTAMENTE!</color></size>\n<size=110%>Felicidades, has descubierto la verdad.</size>"
+                : $"<size=150%><color=red>¡VEREDICTO INCORRECTO!</color></size>\n<size=110%>Te has equivocado. El sospechoso era {(eraCulpable ? "Culpable" : "Inocente")}.</size>";
+
+            string resumen = $"\n\n<size=130%><b>RESUMEN DEL CASO:</b></size>\n" +
+                             $"- <b>Actitud:</b> {caso.Actitud}\n" +
+                             $"- <b>Coartada falsa:</b> {caso.Coartada}\n" +
+                             $"- <b>Secreto {(eraCulpable ? "Criminal" : "Vergonzoso")}:</b> {(eraCulpable ? caso.SecretoCulpable : caso.SecretoInocente)}\n\n" +
+                             $"<i>Generando próximo caso en segundo plano...</i>";
+
+            textoResultadoVeredicto.text = resultadoTitulo + resumen;
         }
+
+        // Generar el próximo caso en segundo plano
+        if (caseGenerator != null)
+        {
+            GameContext.CasoPrecargado = await caseGenerator.GenerarCasoAsync();
+        }
+
+        // Activar el botón de reinicio y actualizar texto
+        if (textoResultadoVeredicto != null)
+        {
+            textoResultadoVeredicto.text = textoResultadoVeredicto.text.Replace("Generando próximo caso en segundo plano...", "<b>¡Siguiente caso listo!</b>");
+        }
+        
+        if (botonReinicio != null) botonReinicio.SetActive(true);
     }
 
     public void ReiniciarInterrogatorio()
     {
         Debug.Log("Reiniciando interrogatorio...");
+        
+        System.GC.Collect();
+
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 

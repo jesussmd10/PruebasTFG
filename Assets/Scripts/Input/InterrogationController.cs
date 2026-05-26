@@ -11,9 +11,9 @@ public class InterrogationController : MonoBehaviour
     [SerializeField] private InputActionReference botonHablarVR;
 
     [Header("Detección de Grito")]
-    [Range(0.01f, 1f)]
-    [Tooltip("Umbral para considerar que se está gritando. Ajusta este valor viendo la consola.")]
-    [SerializeField] private float umbralGrito = 0.25f;
+    [Range(0.001f, 1f)]
+    [Tooltip("Umbral de volumen (RMS) para considerar que se está gritando. En gafas VR, la voz suele ser más baja, un valor entre 0.05 y 0.15 suele funcionar bien.")]
+    [SerializeField] private float umbralGrito = 0.08f;
 
     [Header("Detección de Silencio")]
     [Range(0.0001f, 0.1f)]
@@ -29,11 +29,13 @@ public class InterrogationController : MonoBehaviour
     {
         InicializarMicrófono();
 
-        // Forzar idioma español y proveer un prompt inicial en Whisper para evitar latencia de auto-detección y errores de reconocimiento.
+        // Forzar idioma español y proveer un prompt inicial en Whisper con frases completas
+        // para mejorar el contexto y evitar que "coartada" se traduzca como "cuarta".
         if (whisper != null)
         {
             whisper.language = "es";
-            whisper.initialPrompt = "interrogatorio, sospechoso, culpable, inocente, coartada, delito, policía, detective, Alex, comisaría, pistas, asesinato, robo, mentiras.";
+            // Un prompt en formato de frase natural ayuda más a Whisper que palabras sueltas.
+            whisper.initialPrompt = "Este es un interrogatorio policial en español. Las respuestas son directas. Vocabulario: coartada, crimen, sospechoso, pruebas, culpable, inocente, asesinato, fiscalía, delito, policía, detective.";
         }
     }
 
@@ -194,10 +196,16 @@ public class InterrogationController : MonoBehaviour
         int posicionFinal = Microphone.GetPosition(microfonoActual);
 
         // Rescatar desde medio segundo antes
-        int inicioSeguro = Mathf.Max(0, posicionInicio - 8000);
+        int inicioSeguro = posicionInicio - 8000;
+        
+        // Manejar el caso en el que el buffer circular del micrófono haya dado la vuelta
+        int totalMuestrasClip = clipGrabado.samples;
+        if (inicioSeguro < 0) inicioSeguro += totalMuestrasClip;
+        
         int cantidadMuestras = posicionFinal - inicioSeguro;
+        if (cantidadMuestras < 0) cantidadMuestras += totalMuestrasClip; // Dio la vuelta durante la grabación
 
-        if (cantidadMuestras <= 0) yield break;
+        if (cantidadMuestras <= 0 || cantidadMuestras > totalMuestrasClip) yield break;
 
         // Crear clip limpio
         float[] muestrasRecortadas = new float[cantidadMuestras];
@@ -206,24 +214,27 @@ public class InterrogationController : MonoBehaviour
         float volumenDetectado = CalcularVolumenRMS(muestrasRecortadas);
         bool estaGritando = volumenDetectado > umbralGrito;
 
-        Debug.Log($"Volumen: {volumenDetectado:F4} | Gritando: {estaGritando}");
-
-        if (volumenDetectado < umbralSilencio)
-        {
-            Debug.LogWarning($"[Whisper Ignorado] El audio ({volumenDetectado:F4}) era puro silencio o ruido. Ajusta 'Umbral Silencio' si esto es un error.");
-            yield break;
-        }
-
         float maxVal = 0f;
         for (int i = 0; i < muestrasRecortadas.Length; i++)
         {
             if (Mathf.Abs(muestrasRecortadas[i]) > maxVal) maxVal = Mathf.Abs(muestrasRecortadas[i]);
         }
 
+        Debug.Log($"<color=cyan>[Micrófono]</color> Volumen RMS: {volumenDetectado:F4} | Pico Máximo: {maxVal:F4} | Gritando: {estaGritando} (Umbral: {umbralGrito:F4})");
+
+        if (volumenDetectado < umbralSilencio)
+        {
+            Debug.LogWarning($"<color=orange>[Whisper Ignorado]</color> El audio ({volumenDetectado:F4}) era puro silencio o ruido de fondo. Ajusta 'Umbral Silencio' en el inspector si tu voz no entra.");
+            yield break;
+        }
+
         if (maxVal > 0.001f)
         {
-            // Amplificar la voz hasta un 90% pero limitamos a multiplicarlo x8 para evitar subir el ruido blanco
-            float multiplicador = Mathf.Min(0.9f / maxVal, 8f); 
+            // Amplificar la voz. En gafas VR (Quest, etc.) el micro suele estar muy bajo.
+            // Aumentamos el límite del multiplicador de 8f a 25f para normalizar bien audios débiles
+            // y que Whisper lo escuche "claro y fuerte".
+            float multiplicador = Mathf.Min(0.9f / maxVal, 25f); 
+            Debug.Log($"<color=cyan>[Audio Normalizado]</color> Multiplicado por {multiplicador:F2}x para Whisper.");
             for (int i = 0; i < muestrasRecortadas.Length; i++)
             {
                 muestrasRecortadas[i] *= multiplicador;

@@ -19,6 +19,8 @@ public class GameContext : MonoBehaviour
         public string DescripcionPrompt;
         public string Coartada;
         public string Actitud;
+        public string SecretoCulpable;
+        public string SecretoInocente;
     }
 
     private CasoDelito delitoActual;
