@@ -16,6 +16,7 @@ public class InterrogationManager : MonoBehaviour
     [SerializeField] private GameObject botonesEleccion;
     [SerializeField] private GameObject botonReinicio;
     [SerializeField] private TMPro.TextMeshProUGUI textoResultadoVeredicto;
+    [SerializeField] private TMPro.TextMeshProUGUI textoResumenVeredicto;
 
     private string contenidoFolio = "";
     private bool juegoActivo = false;
@@ -29,10 +30,34 @@ public class InterrogationManager : MonoBehaviour
 
     public async void PrepararNuevaPartida()
     {
-        juegoActivo = true;
+        // juegoActivo se activará al final para evitar que el reloj corra mientras se genera el caso
         contenidoFolio = "";
 
         if (panelVeredicto != null) panelVeredicto.SetActive(false);
+
+        // Buscar y reiniciar el movimiento del NPC para que vuelva a hacer la animación de llegada
+        NPCMovement npcMovement = UnityEngine.Object.FindFirstObjectByType<NPCMovement>(FindObjectsInactive.Include);
+        if (npcMovement != null)
+        {
+            // Apagamos y encendemos para forzar a que los triggers de la puerta (OnTriggerExit/Enter) se reseteen correctamente
+            npcMovement.gameObject.SetActive(false);
+            npcMovement.ReiniciarMovimiento();
+            npcMovement.gameObject.SetActive(true);
+        }
+
+        // Buscar la puerta y reactivar su animador para que funcione al empezar/reiniciar
+        Animator[] animators = UnityEngine.Object.FindObjectsByType<Animator>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (var anim in animators)
+        {
+            string nm = anim.gameObject.name.ToLower();
+            if (nm.Contains("puerta") || nm.Contains("door"))
+            {
+                anim.gameObject.SetActive(true);
+                anim.enabled = true; // Activar el animador
+                anim.Rebind();       // Resetear la animación al inicio
+                anim.Play(0, -1, 0f); // Forzar reproducción desde el principio
+            }
+        }
 
         
         if (textoRelojVR != null)
@@ -108,7 +133,6 @@ public class InterrogationManager : MonoBehaviour
         }
 
         // Lógica de inicio de partida
-        juegoActivo = true;
 
         GameContext.CasoDelito caso = GameContext.CasoPrecargado;
 
@@ -152,10 +176,23 @@ public class InterrogationManager : MonoBehaviour
         // Inicializar IA con el caso generado
         dialogueSystem.InicializarPersonalidad(esCulpable, caso);
 
-        // Suscribirse a eventos
+        // Suscribirse a eventos (evitar duplicados)
+        EventSystem.OnInterrogacionRecibida.RemoveListener(ProcesarInterrogacion);
+        EventSystem.OnInterrogatorioTerminado.RemoveListener(TerminarJuego);
+        EventSystem.OnPistaDescubierta.RemoveListener(AñadirPistaAlFolio);
+        
         EventSystem.OnInterrogacionRecibida.AddListener(ProcesarInterrogacion);
         EventSystem.OnInterrogatorioTerminado.AddListener(TerminarJuego);
         EventSystem.OnPistaDescubierta.AddListener(AñadirPistaAlFolio);
+
+        // Reiniciar estado del juego (tiempo, etc.)
+        GameContext.Instance.ReiniciarEstado();
+        
+        // Reiniciar animación del personaje a estado tranquilo
+        EventSystem.OnEmotionChanged.Invoke(EmotionState.Calmado);
+
+        // Ahora sí, activar el juego para que el reloj empiece a correr
+        juegoActivo = true;
 
         // Limpiar folio y mostrar caso real
         contenidoFolio = "";
@@ -175,12 +212,19 @@ public class InterrogationManager : MonoBehaviour
     {
         if (!juegoActivo) return;
 
-        GameContext.Instance.ReducirTiempo(Time.deltaTime);
+        // Evitar que el timer salte bruscamente si hubo un parón largo (ej. generación en segundo plano)
+        float dt = Time.deltaTime;
+        if (dt > 1f) dt = 1f; 
+
+        GameContext.Instance.ReducirTiempo(dt);
 
         // Actualizar reloj
         int minutos = Mathf.FloorToInt(GameContext.Instance.TiempoRestante / 60);
         int segundos = Mathf.FloorToInt(GameContext.Instance.TiempoRestante % 60);
-        textoRelojVR.text = string.Format("{0:00}:{1:00}", minutos, segundos);
+        if (textoRelojVR != null)
+        {
+            textoRelojVR.text = string.Format("{0:00}:{1:00}", minutos, segundos);
+        }
     }
 
     private async void ProcesarInterrogacion(string textoUsuario, bool usuarioGrita)
@@ -252,12 +296,27 @@ public class InterrogationManager : MonoBehaviour
         {
             // Mostrar ventana emergente en vez de escribir solo en el folio
             panelVeredicto.SetActive(true);
-            if (botonesEleccion != null) botonesEleccion.SetActive(true);
+            if (botonesEleccion != null) 
+            {
+                botonesEleccion.SetActive(true);
+                // Reactivar los botones de Culpable/Inocente por si fueron desactivados en una partida anterior
+                foreach (Transform child in botonesEleccion.transform)
+                {
+                    if (botonReinicio == null || child != botonReinicio.transform)
+                    {
+                        child.gameObject.SetActive(true);
+                    }
+                }
+            }
             if (botonReinicio != null) botonReinicio.SetActive(false);
             
             if (textoResultadoVeredicto != null)
             {
                 textoResultadoVeredicto.text = "¿Cuál es tu veredicto final sobre Alex?";
+            }
+            if (textoResumenVeredicto != null)
+            {
+                textoResumenVeredicto.text = ""; // Limpiar resumen
             }
         }
         else
@@ -313,17 +372,25 @@ public class InterrogationManager : MonoBehaviour
 
         if (textoResultadoVeredicto != null)
         {
-            string resultadoTitulo = acerto 
-                ? "<size=150%><color=green>¡CASO RESUELTO CORRECTAMENTE!</color></size>\n<size=110%>Felicidades, has descubierto la verdad.</size>"
-                : $"<size=150%><color=red>¡VEREDICTO INCORRECTO!</color></size>\n<size=110%>Te has equivocado. El sospechoso era {(eraCulpable ? "Culpable" : "Inocente")}.</size>";
+            textoResultadoVeredicto.text = acerto 
+                ? "<align=center><size=150%><color=green>¡CASO RESUELTO CORRECTAMENTE!</color></size>\n<size=110%>Felicidades, has descubierto la verdad.</size></align>"
+                : $"<align=center><size=150%><color=red>¡VEREDICTO INCORRECTO!</color></size>\n<size=110%>Te has equivocado. El sospechoso era {(eraCulpable ? "Culpable" : "Inocente")}.</size></align>";
+        }
 
-            string resumen = $"\n\n<size=130%><b>RESUMEN DEL CASO:</b></size>\n" +
-                             $"- <b>Actitud:</b> {caso.Actitud}\n" +
-                             $"- <b>Coartada falsa:</b> {caso.Coartada}\n" +
-                             $"- <b>Secreto {(eraCulpable ? "Criminal" : "Vergonzoso")}:</b> {caso.Secreto}\n\n" +
-                             $"<i>Generando próximo caso en segundo plano...</i>";
+        string estadoSiguienteCaso = "<i>Generando próximo caso en segundo plano...</i>";
+        string resumen = $"<align=center><size=130%><b>RESUMEN DEL CASO:</b></size>\n" +
+                         $"<size=90%>- <b>Actitud:</b> {caso.Actitud}\n" +
+                         $"- <b>Coartada falsa:</b> {caso.Coartada}\n" +
+                         $"- <b>Secreto {(eraCulpable ? "Criminal" : "Vergonzoso")}:</b> {caso.Secreto}\n\n" +
+                         $"{estadoSiguienteCaso}</size></align>";
 
-            textoResultadoVeredicto.text = resultadoTitulo + resumen;
+        if (textoResumenVeredicto != null)
+        {
+            textoResumenVeredicto.text = resumen;
+        }
+        else if (textoResultadoVeredicto != null) // Fallback si no has asignado el texto en Unity aún
+        {
+            textoResultadoVeredicto.text += "\n\n" + resumen;
         }
 
         // Generar el próximo caso en segundo plano
@@ -333,9 +400,14 @@ public class InterrogationManager : MonoBehaviour
         }
 
         // Activar el botón de reinicio y actualizar texto
-        if (textoResultadoVeredicto != null)
+        string textoListo = "<b>¡Siguiente caso listo!</b>";
+        if (textoResumenVeredicto != null)
         {
-            textoResultadoVeredicto.text = textoResultadoVeredicto.text.Replace("Generando próximo caso en segundo plano...", "<b>¡Siguiente caso listo!</b>");
+            textoResumenVeredicto.text = textoResumenVeredicto.text.Replace(estadoSiguienteCaso, textoListo);
+        }
+        else if (textoResultadoVeredicto != null)
+        {
+            textoResultadoVeredicto.text = textoResultadoVeredicto.text.Replace(estadoSiguienteCaso, textoListo);
         }
         
         if (botonReinicio != null) botonReinicio.SetActive(true);

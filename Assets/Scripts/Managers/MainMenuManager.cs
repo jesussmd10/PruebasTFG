@@ -49,6 +49,26 @@ public class MainMenuManager : MonoBehaviour
         {
             interrogation.ForzarApagadoUI();
         }
+
+        // Ocultar al NPC en el menú principal para que no camine ni active la puerta antes de jugar
+        NPCMovement npcMovement = FindAnyObjectByType<NPCMovement>(FindObjectsInactive.Include);
+        if (npcMovement != null)
+        {
+            npcMovement.GuardarPosicion(); // Guardar su posición original antes de apagarlo
+            npcMovement.gameObject.SetActive(false);
+        }
+
+        // Asegurar que la puerta sea visible pero su animación no se ejecute en el menú principal
+        Animator[] animators = FindObjectsByType<Animator>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (var anim in animators)
+        {
+            string nm = anim.gameObject.name.ToLower();
+            if (nm.Contains("puerta") || nm.Contains("door"))
+            {
+                anim.gameObject.SetActive(true); // Que se vea la puerta (por si el usuario la ocultó)
+                anim.enabled = false;            // Pero que no se anime
+            }
+        }
     }
 
     private void Start()

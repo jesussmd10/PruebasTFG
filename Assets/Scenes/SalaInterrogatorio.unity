@@ -2075,7 +2075,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &515000783
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6969,9 +6969,7 @@ MonoBehaviour:
   botonesEleccion: {fileID: 1450570020}
   botonReinicio: {fileID: 996668301}
   textoResultadoVeredicto: {fileID: 2118188602}
-  textoDetallesVeredicto: {fileID: 1589737651}
-  personajeNPC: {fileID: 328002606}
-  puertaAnim: {fileID: 1645785345}
+  textoResumenVeredicto: {fileID: 1589737651}
 --- !u!114 &1442791692
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8247,7 +8245,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0.0026598, y: -190}
-  m_SizeDelta: {x: 4651.4, y: 134.07}
+  m_SizeDelta: {x: 4651.4, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1589737649
 MonoBehaviour:
@@ -12236,7 +12234,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0.0026598, y: 1005}
-  m_SizeDelta: {x: 4651.4, y: 223.44}
+  m_SizeDelta: {x: 4651.4, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &2118188605
 MonoBehaviour:
