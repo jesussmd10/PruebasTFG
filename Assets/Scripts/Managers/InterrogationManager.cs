@@ -20,7 +20,14 @@ public class InterrogationManager : MonoBehaviour
     private string contenidoFolio = "";
     private bool juegoActivo = false;
 
-    private async void Start()
+    // Se llama desde el MainMenuManager para asegurar que no se pise la UI al arrancar
+    public void ForzarApagadoUI()
+    {
+        if (panelVeredicto != null) panelVeredicto.SetActive(false);
+        if (textoFolioVR != null) textoFolioVR.text = "";
+    }
+
+    public async void PrepararNuevaPartida()
     {
         juegoActivo = true;
         contenidoFolio = "";
@@ -313,7 +320,7 @@ public class InterrogationManager : MonoBehaviour
             string resumen = $"\n\n<size=130%><b>RESUMEN DEL CASO:</b></size>\n" +
                              $"- <b>Actitud:</b> {caso.Actitud}\n" +
                              $"- <b>Coartada falsa:</b> {caso.Coartada}\n" +
-                             $"- <b>Secreto {(eraCulpable ? "Criminal" : "Vergonzoso")}:</b> {(eraCulpable ? caso.SecretoCulpable : caso.SecretoInocente)}\n\n" +
+                             $"- <b>Secreto {(eraCulpable ? "Criminal" : "Vergonzoso")}:</b> {caso.Secreto}\n\n" +
                              $"<i>Generando próximo caso en segundo plano...</i>";
 
             textoResultadoVeredicto.text = resultadoTitulo + resumen;
@@ -336,11 +343,16 @@ public class InterrogationManager : MonoBehaviour
 
     public void ReiniciarInterrogatorio()
     {
-        Debug.Log("Reiniciando interrogatorio...");
+        Debug.Log("Iniciando siguiente interrogatorio en Single-Scene...");
         
         System.GC.Collect();
 
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        // Limpiar el texto del folio actual
+        if (textoFolioVR != null) textoFolioVR.text = "";
+
+        // En vez de destruir la escena, simplemente escondemos el veredicto 
+        // y arrancamos la partida de nuevo con el caso que ya está precargado
+        PrepararNuevaPartida();
     }
 
     private void ActualizarFolio(string textoExtra)

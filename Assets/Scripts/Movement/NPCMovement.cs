@@ -19,6 +19,47 @@ public class NPCMovement : MonoBehaviour
     // ---> NUEVO: Creamos esta variable para que la IA sepa que estamos aparcando <---
     public bool EstaLlegando { get; private set; } = false;
 
+    private Vector3 posicionInicial;
+    private Quaternion rotacionInicial;
+    private bool posicionGuardada = false;
+
+    private void Awake()
+    {
+        GuardarPosicion();
+    }
+
+    private void Start()
+    {
+        GuardarPosicion();
+    }
+
+    public void GuardarPosicion()
+    {
+        if (!posicionGuardada)
+        {
+            posicionInicial = transform.position;
+            rotacionInicial = transform.rotation;
+            posicionGuardada = true;
+        }
+    }
+
+    public void ReiniciarMovimiento()
+    {
+        GuardarPosicion();
+        
+        transform.position = posicionInicial;
+        transform.rotation = rotacionInicial;
+        yaSeHaSentado = false;
+        EstaLlegando = false;
+        
+        if (characterAnimator != null)
+        {
+            // Forzamos al animador a volver a su estado base (caminar)
+            Animator anim = characterAnimator.GetComponent<Animator>();
+            if (anim != null) anim.Rebind();
+        }
+    }
+
     private void Update()
     {
         if (yaSeHaSentado) return;

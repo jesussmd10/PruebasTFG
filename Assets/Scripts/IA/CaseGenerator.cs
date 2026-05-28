@@ -16,15 +16,14 @@ public class CaseGenerator : MonoBehaviour
 {
     [SerializeField] private IAConfig iaConfig;
 
-    // Casos de fallback (los originales hardcodeados) - pool ampliado
     private static readonly GameContext.CasoDelito[] casosFallback = new GameContext.CasoDelito[]
     {
-        new GameContext.CasoDelito { ID = "042", TituloFolio = "ROBO EN EL MUSEO", DescripcionFolio = "Robo de un diamante maldito durante una gala de disfraces.", DescripcionPrompt = "un atraco en el museo de arte moderno donde se robó un diamante maldito durante una gala", Coartada = "encerrado accidentalmente en el baño de un restaurante tailandés", Actitud = "Estás absolutamente paranoico, miras a todos lados y sudas profusamente.", SecretoCulpable = "El diamante lo tienes escondido en el zapato izquierdo.", SecretoInocente = "En realidad fuiste al restaurante para espiar a tu ex-pareja." },
-        new GameContext.CasoDelito { ID = "087", TituloFolio = "ENVENENAMIENTO", DescripcionFolio = "Asesinato por envenenamiento con pudin en el asilo de ancianos.", DescripcionPrompt = "el envenenamiento de un millonario usando pudin de chocolate caducado en un asilo", Coartada = "participando en una sesión de espiritismo clandestina", Actitud = "Eres increíblemente sarcástico, usas humor negro y te burlas del detective.", SecretoCulpable = "Compraste el veneno por internet usando la tarjeta de tu abuela.", SecretoInocente = "En la sesión de espiritismo estabas intentando contactar a tu hámster muerto." },
-        new GameContext.CasoDelito { ID = "104", TituloFolio = "SECUESTRO VIRTUAL", DescripcionFolio = "Secuestro de un famoso Youtuber mientras emitía en directo.", DescripcionPrompt = "el secuestro de un youtuber famoso irrumpiendo en su mansión en pleno directo", Coartada = "haciendo cosplay de Batman en tu habitación grabando TikToks", Actitud = "Tienes aires de grandeza, eres pedante y te sientes profundamente insultado.", SecretoCulpable = "Se te cayó tu móvil personal en la casa del Youtuber.", SecretoInocente = "Los TikToks que grababas eran bailando canciones infantiles en pijama." },
-        new GameContext.CasoDelito { ID = "019", TituloFolio = "SABOTAJE ANIMAL", DescripcionFolio = "Liberación ilegal de pingüinos pigmeos en el puerto de la ciudad.", DescripcionPrompt = "haber liberado cien pingüinos pigmeos de un carguero en el puerto", Coartada = "perdido en el bosque persiguiendo a lo que creías que era un chupacabras", Actitud = "Estás en estado de negación absoluta, al borde del colapso nervioso y lloriqueando.", SecretoCulpable = "Aún tienes un pingüino escondido en la bañera de tu casa.", SecretoInocente = "No estabas en el bosque, estabas robando wifi en un McDonald's a esa hora." },
-        new GameContext.CasoDelito { ID = "055", TituloFolio = "AGRESIÓN FRIKI", DescripcionFolio = "Agresión con sables láser de juguete en la convención de cómics.", DescripcionPrompt = "haber agredido violentamente al organizador de una convención de cómics usando réplicas de sables láser", Coartada = "en una cita a ciegas desastrosa con alguien que se hacía llamar 'El Rey Lagarto'", Actitud = "Eres el típico cuñado sabelotodo, interrumpes constantemente al detective para explicarle cómo hacer su trabajo.", SecretoCulpable = "Rompiste tu propio sable láser al golpear a la víctima.", SecretoInocente = "En tu cita a ciegas te dejaron plantado y te pusiste a llorar en el baño." },
-        new GameContext.CasoDelito { ID = "092", TituloFolio = "FALSIFICACIÓN", DescripcionFolio = "Falsificación de obras de arte contemporáneo usando macarrones con queso.", DescripcionPrompt = "una estafa vendiendo cuadros falsos de Picasso hechos de macarrones con queso y pintura", Coartada = "intentando robar Wi-Fi de la cafetería de enfrente desde el maletero de tu coche", Actitud = "Eres extremadamente seductor y manipulador, intentando coquetear con el detective con calma perturbadora.", SecretoCulpable = "Usaste macarrones de la marca 'Buitoni' para el cuadro principal.", SecretoInocente = "Estabas en el maletero porque le debías dinero a un prestamista y te estabas escondiendo." }
+        new GameContext.CasoDelito { ID = "042", TituloFolio = "ROBO EN EL MUSEO", DescripcionFolio = "Robo de un diamante maldito durante una gala de disfraces.", DescripcionPrompt = "un atraco en el museo de arte moderno donde se robó un diamante maldito durante una gala", Coartada = "encerrado en el baño de un tailandés", Actitud = "Paranoico", EsCulpable = true, Secreto = "El diamante está en su zapato." },
+        new GameContext.CasoDelito { ID = "087", TituloFolio = "ENVENENAMIENTO", DescripcionFolio = "Asesinato por envenenamiento con pudin en el asilo de ancianos.", DescripcionPrompt = "el envenenamiento de un millonario usando pudin de chocolate caducado en un asilo", Coartada = "haciendo espiritismo clandestino en el sótano", Actitud = "Sarcástico", EsCulpable = false, Secreto = "Invocaba el fantasma de su hámster." },
+        new GameContext.CasoDelito { ID = "104", TituloFolio = "SECUESTRO VIRTUAL", DescripcionFolio = "Secuestro de un famoso Youtuber mientras emitía en directo.", DescripcionPrompt = "el secuestro de un youtuber famoso irrumpiendo en su mansión en pleno directo", Coartada = "grabando TikToks con cosplay de Batman", Actitud = "Pedante", EsCulpable = true, Secreto = "Perdió su móvil en la mansión." },
+        new GameContext.CasoDelito { ID = "019", TituloFolio = "SABOTAJE ANIMAL", DescripcionFolio = "Liberación ilegal de pingüinos pigmeos en el puerto de la ciudad.", DescripcionPrompt = "haber liberado cien pingüinos pigmeos de un carguero en el puerto", Coartada = "persiguiendo ovnis en el bosque oscuro", Actitud = "Lloriqueando", EsCulpable = false, Secreto = "Robaba el WiFi del McDonald's." },
+        new GameContext.CasoDelito { ID = "055", TituloFolio = "AGRESIÓN FRIKI", DescripcionFolio = "Agresión con sables láser de juguete en la convención de cómics.", DescripcionPrompt = "haber agredido violentamente al organizador de una convención de cómics usando réplicas de sables láser", Coartada = "en una cita con 'El Rey Lagarto'", Actitud = "Sabelotodo", EsCulpable = true, Secreto = "Rompió su sable en la cabeza de la víctima." },
+        new GameContext.CasoDelito { ID = "092", TituloFolio = "FALSIFICACIÓN", DescripcionFolio = "Falsificación de obras de arte contemporáneo usando macarrones con queso.", DescripcionPrompt = "una estafa vendiendo cuadros falsos de Picasso hechos de macarrones con queso y pintura", Coartada = "robando WiFi desde mi maletero", Actitud = "Seductor", EsCulpable = false, Secreto = "Huía de un prestamista colombiano." }
     };
 
     private enum NivelInteligencia { Simple, Medio, Complejo }
@@ -41,109 +40,142 @@ public class CaseGenerator : MonoBehaviour
             return NivelInteligencia.Medio;
     }
 
-    private static string ObtenerPromptDinamico(NivelInteligencia inteligencia)
+    private static string ObtenerPromptDinamico(NivelInteligencia inteligencia, bool esCulpable)
     {
-        string prompt = @"Eres un generador de datos policiales. Debes devolver ÚNICAMENTE un objeto JSON válido.
-No escribas introducciones, no uses markdown. SOLO JSON. Escribe en perfecto español.
+        string estadoCulpa = esCulpable ? "CULPABLE" : "INOCENTE";
+        string reglaSecreto = esCulpable 
+            ? "3. El Secreto: Como el sospechoso es CULPABLE, genera una prueba física irrefutable que demuestre que cometió el crimen." 
+            : "3. El Secreto: Como el sospechoso es INOCENTE, genera una verdad vergonzosa o humillante que demuestra que estaba haciendo su coartada, explicando por qué mintió y se ocultó.";
+
+        string prompt = $@"Eres un generador de datos policiales. Debes rellenar una ficha policial con texto simple.
+No escribas introducciones. Escribe en perfecto español.
 
 INSTRUCCIONES DE GENERACIÓN:
-Tienes que INVENTAR un caso policial, una coartada para el sospechoso y una personalidad/actitud para él.
+Tienes que INVENTAR un caso policial, una coartada para el sospechoso y una actitud.
+¡MUY IMPORTANTE! EL SOSPECHOSO DE ESTE CASO ES {estadoCulpa}. Debes generar SOLO UN SECRETO que concuerde con que es {estadoCulpa}.
 ";
 
         if (inteligencia == NivelInteligencia.Simple)
         {
-            prompt += @"
+            prompt += $@"
 REGLAS PARA EL CASO (NIVEL BÁSICO):
-- Inventa un crimen muy común (robo, pelea, estafa).
-- Inventa una coartada (normal o peculiar, pero siempre creíble y relacionada con el contexto, lugar u hora del crimen).
-- Inventa una actitud básica (nervioso, enfadado, triste).
-- Sigue exactamente la estructura de estos ejemplos. IMPORTANTE: Todo debe estar relacionado. El `secretoCulpable` es un detalle clave que lo incrimina. El `secretoInocente` explica por qué mintió en su coartada falsa (por vergüenza o miedo) pero lo desvincula del crimen.
+1. El Crimen: Debe ser un robo o estafa común en un lugar específico.
+2. La Coartada: El sospechoso afirma que estaba haciendo algo normal CERCA del lugar del crimen a esa misma hora.
+{reglaSecreto}
+4. Todo debe tener una lógica perfecta. Si el crimen es en una panadería, la coartada debe involucrar pan o comida, y el secreto debe relacionarse con eso.
+5. FORMATO POLICIAL (MUY IMPORTANTE): Redacta TODOS los campos ('coartada', 'actitud', 'secreto') de forma neutral, en tercera persona o infinitivo. NUNCA uses ""Tú"" o ""Yo"".
+6. ACTITUD BREVE: Usa solo 1 o 2 adjetivos (ej: ""Nervioso"").
 
-EJEMPLO 1:
-{
-  ""id"": ""001"",
-  ""titulo"": ""ROBO DE COCHE"",
-  ""descripcionFolio"": ""Robo de un vehículo sedán rojo en el aparcamiento."",
-  ""descripcionPrompt"": ""el robo de un coche sedán rojo en el aparcamiento del supermercado"",
-  ""coartada"": ""durmiendo en casa de mi hermano"",
-  ""actitud"": ""Estás muy asustado y lloras."",
-  ""secretoCulpable"": ""Robaste el coche a las 03:00 de la mañana rompiendo el cristal."",
-  ""secretoInocente"": ""Tu hermano no estaba en casa, estabas durmiendo en un banco del parque.""
-}
+EJEMPLO 1 (Asumiendo sospechoso {estadoCulpa}):
+TITULO: ROBO DE COCHES
+DESCRIPCION_FOLIO: Robo de un sedán en el aparcamiento del parque.
+DESCRIPCION_PROMPT: el robo de un coche en el parque
+COARTADA: Pasear al perro por el parque.
+ACTITUD: Nervioso.
+SECRETO: {(esCulpable ? "Tener las llaves del coche robado en el bolsillo." : "No tiene perro, estaba espiando a su ex pareja en el parque.")}
 
-EJEMPLO 2:
-{
-  ""id"": ""002"",
-  ""titulo"": ""PELEA EN EL BAR"",
-  ""descripcionFolio"": ""Agresión física a un camarero en el bar central."",
-  ""descripcionPrompt"": ""una agresión violenta al camarero del bar central lanzándole una botella"",
-  ""coartada"": ""paseando a mi perro en el parque"",
-  ""actitud"": ""Estás a la defensiva y cruzas los brazos."",
-  ""secretoCulpable"": ""Le lanzaste una botella de ron añejo."",
-  ""secretoInocente"": ""No estabas paseando al perro, estabas comprando droga en el parque.""
-}
-
-AHORA GENERA UN JSON CON UN CASO COMPLETAMENTE INVENTADO POR TI:
+IMPORTANTE: RELLENA ESTA PLANTILLA EXACTAMENTE CON EL MISMO FORMATO Y LAS MISMAS ETIQUETAS EN MAYÚSCULAS:
+TITULO: [TITULO CORTO]
+DESCRIPCION_FOLIO: [Descripción corta]
+DESCRIPCION_PROMPT: [Descripción detallada]
+COARTADA: [Coartada inventada]
+ACTITUD: [Actitud breve]
+SECRETO: [Secreto crítico]
 ";
         }
         else if (inteligencia == NivelInteligencia.Complejo)
         {
-            prompt += @"
+            prompt += $@"
 REGLAS PARA EL CASO (NIVEL EXPERTO):
-- Inventa crímenes extremadamente originales, bizarros, cinematográficos o complejos (ej: robo de reliquias, cibercrímenes extraños, crímenes pasionales rocambolescos).
-- Inventa coartadas detalladas. La coartada DEBE estar inteligentemente conectada con los elementos del caso (lugar, hora, personas implicadas).
-- Inventa actitudes que sean perfiles psicológicos muy complejos (ej: narcisista pedante, manipulador seductor, cuñado sabelotodo, místico zen, paranoico de conspiraciones).
-- Inventa 2 secretos locos o bizarros, PERO con PERFECTO SENTIDO LÓGICO. Todo debe estar entrelazado como un puzle intuitivo: El `secretoCulpable` es la prueba irrefutable de que cometió el crimen. El `secretoInocente` es la razón embarazosa/ilegal por la que mintió en su coartada, lo cual demuestra que no es el asesino/ladrón.
-- NO COPIES los ejemplos, úsalos solo como inspiración para ver el formato JSON. ¡Sé totalmente creativo!
+1. El Crimen: Un crimen bizarro, muy específico y original.
+2. La Coartada: Una excusa extraña pero creíble que ubica al sospechoso en la escena del crimen, haciendo otra cosa.
+{reglaSecreto}
+4. LÓGICA: El jugador debe poder conectar la coartada con el secreto de forma deductiva e intuitiva. 
+5. FORMATO POLICIAL (MUY IMPORTANTE): Redacta TODOS los campos ('coartada', 'actitud', 'secreto') de forma neutral, en tercera persona o infinitivo. NUNCA uses ""Tú"" o ""Yo"".
+6. ACTITUD BREVE: Usa solo 1 o 2 adjetivos (ej: ""Sarcástico"").
 
-EJEMPLO DE INSPIRACIÓN:
-{
-  ""id"": ""888"",
-  ""titulo"": ""FALSIFICACIÓN BIZARRA"",
-  ""descripcionFolio"": ""Falsificación de obras de arte usando macarrones con queso."",
-  ""descripcionPrompt"": ""una estafa internacional vendiendo cuadros de Picasso falsos hechos de macarrones con queso"",
-  ""coartada"": ""en una cita a ciegas desastrosa con alguien que se hacía llamar 'El Rey Lagarto'"",
-  ""actitud"": ""Eres increíblemente sarcástico, usas humor negro y te burlas del detective constantemente."",
-  ""secretoCulpable"": ""El pegamento que usaste para los macarrones era de la marca SuperGlue."",
-  ""secretoInocente"": ""En la cita a ciegas te pusiste a llorar porque te acordaste de tu ex.""
-}
+EJEMPLO DE INSPIRACIÓN (Asumiendo sospechoso {estadoCulpa}):
+TITULO: SABOTAJE DEL ZOO
+DESCRIPCION_FOLIO: Liberación de los pingüinos rompiendo el cristal.
+DESCRIPCION_PROMPT: haber roto el cristal para liberar a los pingüinos
+COARTADA: Comer un helado frente al recinto de los pingüinos.
+ACTITUD: Sarcástico.
+SECRETO: {(esCulpable ? "Ocultar un martillo manchado de hielo y agua." : "Llorar frente a los pingüinos porque su helado se había caído al suelo.")}
 
-AHORA GENERA UN JSON CON UN CASO COMPLETAMENTE NUEVO, ÚNICO, ORIGINAL Y CREATIVO:
+IMPORTANTE: RELLENA ESTA PLANTILLA EXACTAMENTE CON EL MISMO FORMATO Y LAS MISMAS ETIQUETAS EN MAYÚSCULAS:
+TITULO: [TITULO CORTO]
+DESCRIPCION_FOLIO: [Descripción corta]
+DESCRIPCION_PROMPT: [Descripción detallada]
+COARTADA: [Coartada inventada]
+ACTITUD: [Actitud breve]
+SECRETO: [Secreto crítico]
 ";
         }
         else // Medio
         {
-            prompt += @"
+            prompt += $@"
 REGLAS PARA EL CASO (NIVEL MEDIO):
-- Inventa crímenes variados: algunos cotidianos y otros más curiosos.
-- Inventa coartadas concretas (normales o locas, pero creíbles y siempre conectadas al contexto del crimen).
-- Inventa actitudes variadas (sarcástico, confundido, chulo, asustado).
-- Inventa dos secretos: Todo debe estar muy bien atado para que el jugador pueda deducir. El `secretoCulpable` oculta una prueba directa del crimen. El `secretoInocente` oculta la verdadera razón de su coartada falsa (un motivo vergonzoso) demostrando su inocencia en el caso.
-- Usa este ejemplo como guía para el formato JSON, pero cambia completamente la temática.
+1. El Crimen: Un delito curioso (ej: sabotaje, hurto inusual).
+2. La Coartada: Afirma que estaba ocupado en el mismo lugar del crimen haciendo una actividad paralela.
+{reglaSecreto}
+4. CONEXIÓN INTUITIVA: La coartada y el crimen deben estar tan relacionados que el secreto parezca obvio si el jugador piensa con lógica.
+5. FORMATO POLICIAL (MUY IMPORTANTE): Redacta TODOS los campos ('coartada', 'actitud', 'secreto') de forma neutral, en tercera persona o infinitivo. NUNCA uses ""Tú"" o ""Yo"".
+6. ACTITUD BREVE: Usa solo 1 o 2 adjetivos (ej: ""Arrogante"").
 
-EJEMPLO:
-{
-  ""id"": ""055"",
-  ""titulo"": ""SABOTAJE TECNOLÓGICO"",
-  ""descripcionFolio"": ""Infección de virus en la red del ayuntamiento."",
-  ""descripcionPrompt"": ""haber introducido un virus que borró los archivos del ayuntamiento"",
-  ""coartada"": ""jugando a un torneo de videojuegos online en mi cuarto"",
-  ""actitud"": ""Te muestras arrogante y miras con desprecio al detective."",
-  ""secretoCulpable"": ""Introdujiste el virus usando un pendrive con forma de pato."",
-  ""secretoInocente"": ""Estabas jugando al Barbie Horse Adventures, no a un torneo de videojuegos.""
-}
+EJEMPLO (Asumiendo sospechoso {estadoCulpa}):
+TITULO: SABOTAJE INFORMÁTICO
+DESCRIPCION_FOLIO: Infección de un virus en la sala de ordenadores de la biblioteca.
+DESCRIPCION_PROMPT: haber metido un virus en los ordenadores de la biblioteca
+COARTADA: Jugar videojuegos en un portátil en la biblioteca.
+ACTITUD: Arrogante.
+SECRETO: {(esCulpable ? "El virus se transmitió desde su propio pendrive negro." : "Estaba jugando al solitario porque no tiene amigos online.")}
 
-AHORA GENERA UN JSON CON UN CASO INVENTADO POR TI:
+IMPORTANTE: RELLENA ESTA PLANTILLA EXACTAMENTE CON EL MISMO FORMATO Y LAS MISMAS ETIQUETAS EN MAYÚSCULAS:
+TITULO: [TITULO CORTO]
+DESCRIPCION_FOLIO: [Descripción corta]
+DESCRIPCION_PROMPT: [Descripción detallada]
+COARTADA: [Coartada inventada]
+ACTITUD: [Actitud breve]
+SECRETO: [Secreto crítico]
 ";
         }
 
         return prompt;
     }
 
+    private static Task<GameContext.CasoDelito> ongoingGeneration = null;
+
+#if UNITY_EDITOR
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetStatics()
+    {
+        ongoingGeneration = null;
+    }
+#endif
+
     /// <summary>
-    /// Intenta generar un caso con la IA. Si falla, devuelve fallback.
+    /// Intenta generar un caso con la IA. Evita generaciones paralelas.
     /// </summary>
     public async Task<GameContext.CasoDelito> GenerarCasoAsync()
+    {
+        if (ongoingGeneration != null)
+        {
+            Debug.LogWarning("[CaseGenerator] Ya hay una generación en curso. Esperando a que termine para no saturar el LLM...");
+            return await ongoingGeneration;
+        }
+
+        ongoingGeneration = GenerarCasoInternoAsync();
+        try
+        {
+            return await ongoingGeneration;
+        }
+        finally
+        {
+            ongoingGeneration = null;
+        }
+    }
+
+    private async Task<GameContext.CasoDelito> GenerarCasoInternoAsync()
     {
         if (iaConfig == null)
         {
@@ -151,15 +183,18 @@ AHORA GENERA UN JSON CON UN CASO INVENTADO POR TI:
             return ObtenerFallback();
         }
 
+        // PRE-DETERMINAR CULPABILIDAD ANTES DE LLAMAR A LA IA
+        bool esCulpableRnd = Random.value > 0.5f;
+
         for (int intento = 0; intento < iaConfig.maxReintentos; intento++)
         {
-            Debug.Log($"[CaseGenerator] Intento {intento + 1}/{iaConfig.maxReintentos}...");
+            Debug.Log($"[CaseGenerator] Intento {intento + 1}/{iaConfig.maxReintentos} (Culpable: {esCulpableRnd})...");
 
             // Iniciar medición de métricas
             if (LatencyMetrics.Instance != null)
                 LatencyMetrics.Instance.IniciarMedicion(iaConfig.nombreModeloCasos, "caso");
 
-            string respuesta = await EnviarPeticion();
+            string respuesta = await EnviarPeticion(esCulpableRnd);
 
             if (string.IsNullOrEmpty(respuesta))
             {
@@ -173,27 +208,30 @@ AHORA GENERA UN JSON CON UN CASO INVENTADO POR TI:
             var caso = ValidarYParsear(respuesta);
             if (caso != null)
             {
+                caso.EsCulpable = esCulpableRnd;
+
                 if (LatencyMetrics.Instance != null)
                     LatencyMetrics.Instance.FinalizarMedicion(respuesta, false);
 
-                Debug.Log($"[CaseGenerator] ✅ Caso generado: {caso.TituloFolio} | Coartada: {caso.Coartada}");
+                Debug.Log($"[CaseGenerator] ✅ Caso generado: {caso.TituloFolio} | Coartada: {caso.Coartada} | Culpable: {caso.EsCulpable}");
                 return caso;
             }
 
-            Debug.LogWarning($"[CaseGenerator] Intento {intento + 1}: No se pudo parsear. Reintentando...");
+            Debug.LogWarning($"[CaseGenerator] Intento {intento + 1}: No se pudo parsear o hubo un error. Reintentando en 3 segundos...");
+            await Task.Delay(3000); // Pausa para no saturar el LLM en caso de error
         }
 
         Debug.LogWarning("[CaseGenerator] Todos los intentos fallaron. Usando fallback.");
         return ObtenerFallback();
     }
 
-    private async Task<string> EnviarPeticion()
+    private async Task<string> EnviarPeticion(bool esCulpable)
     {
         NivelInteligencia inteligencia = ObtenerNivelInteligencia(iaConfig?.nombreModeloCasos);
         
         var messages = new List<object>
         {
-            new { role = "user", content = ObtenerPromptDinamico(inteligencia) }
+            new { role = "user", content = ObtenerPromptDinamico(inteligencia, esCulpable) }
         };
 
         // Usamos un mínimo de 512 tokens para asegurar que el JSON detallado no se corte
@@ -215,7 +253,10 @@ AHORA GENERA UN JSON CON UN CASO INVENTADO POR TI:
             request.uploadHandler = new UploadHandlerRaw(bodyRaw);
             request.downloadHandler = new DownloadHandlerBuffer();
             request.SetRequestHeader("Content-Type", "application/json");
-            request.timeout = Mathf.RoundToInt(iaConfig.tiempoTimeout); // Usar timeout configurado (por defecto 30s)
+            
+            // Forzar un timeout largo (mínimo 120s) porque los modelos pesados pueden tardar mucho en responder
+            int timeoutAsignado = Mathf.RoundToInt(iaConfig.tiempoTimeout);
+            request.timeout = timeoutAsignado < 120 ? 120 : timeoutAsignado; 
 
             var operacion = request.SendWebRequest();
             while (!operacion.isDone) await Task.Yield();
@@ -244,96 +285,55 @@ AHORA GENERA UN JSON CON UN CASO INVENTADO POR TI:
     }
 
     /// <summary>
-    /// Parsea el JSON de forma MUY tolerante. Maneja:
-    /// - JSON envuelto en texto extra
-    /// - Bloques de código markdown (```json ... ```)
-    /// - Campos con nombres ligeramente diferentes
-    /// - Comillas simples o dobles
+    /// Parsea el texto de forma MUY tolerante usando expresiones regulares.
+    /// Extrae los valores basándose en etiquetas "CLAVE: Valor", ignorando formatos JSON problemáticos.
     /// </summary>
     private GameContext.CasoDelito ValidarYParsear(string texto)
     {
         try
         {
+            if (string.IsNullOrWhiteSpace(texto)) return null;
+
             texto = texto.Trim();
 
-            // 1. Quitar bloques de código markdown si los hay
-            texto = Regex.Replace(texto, @"```json\s*", "", RegexOptions.IgnoreCase);
-            texto = Regex.Replace(texto, @"```\s*", "");
+            string titulo = ExtraerValorRegex(texto, "TITULO");
+            string descripcionFolio = ExtraerValorRegex(texto, "DESCRIPCION_FOLIO");
+            string descripcionPrompt = ExtraerValorRegex(texto, "DESCRIPCION_PROMPT");
+            string coartada = ExtraerValorRegex(texto, "COARTADA");
+            string actitud = ExtraerValorRegex(texto, "ACTITUD");
+            string secreto = ExtraerValorRegex(texto, "SECRETO");
 
-            // 2. Buscar el JSON entre la primera { y la última }
-            int inicio = texto.IndexOf('{');
-            int fin = texto.LastIndexOf('}');
-            if (inicio < 0 || fin < 0 || fin <= inicio)
-            {
-                Debug.LogWarning("[CaseGenerator] No se encontró JSON válido (sin llaves)");
-                return null;
-            }
-            texto = texto.Substring(inicio, fin - inicio + 1);
+            // Intentar con variantes comunes por si la IA es rebelde
+            if (string.IsNullOrWhiteSpace(titulo)) titulo = ExtraerValorRegex(texto, "TÍTULO") ?? ExtraerValorRegex(texto, "TITLE");
+            if (string.IsNullOrWhiteSpace(coartada)) coartada = ExtraerValorRegex(texto, "ALIBI") ?? ExtraerValorRegex(texto, "EXCUSA");
+            if (string.IsNullOrWhiteSpace(secreto)) secreto = ExtraerValorRegex(texto, "SECRET") ?? ExtraerValorRegex(texto, "PISTA");
 
-            // 3. Intentar parsear
-            JObject json;
-            try
-            {
-                json = JObject.Parse(texto);
-            }
-            catch
-            {
-                // Intentar arreglar comillas simples
-                string arreglado = texto.Replace("'", "\"");
-                try
-                {
-                    json = JObject.Parse(arreglado);
-                }
-                catch (System.Exception ex2)
-                {
-                    Debug.LogWarning($"[CaseGenerator] JSON inválido incluso tras arreglar comillas: {ex2.Message}");
-                    return null;
-                }
-            }
-
-            // 4. Extraer campos con nombres tolerantes (el modelo puede usar variantes)
-            string id = ObtenerCampo(json, "id", "ID", "Id", "numero", "num");
-            string titulo = ObtenerCampo(json, "titulo", "Titulo", "TITULO", "title", "crime", "crimen");
-            string descripcionFolio = ObtenerCampo(json, "descripcionFolio", "descripcion_folio", "descripcion", "Descripcion", "description");
-            string descripcionPrompt = ObtenerCampo(json, "descripcionPrompt", "descripcion_prompt", "prompt", "descripcionCrimen");
-            string coartada = ObtenerCampo(json, "coartada", "Coartada", "alibi", "excusa");
-            string actitud = ObtenerCampo(json, "actitud", "Actitud", "attitude", "comportamiento", "emocion");
-            string secCulpable = ObtenerCampo(json, "secretoCulpable", "secreto_culpable");
-            string secInocente = ObtenerCampo(json, "secretoInocente", "secreto_inocente");
-
-            // 5. Validaciones mínimas (muy permisivas)
+            // Validaciones mínimas
             if (string.IsNullOrWhiteSpace(titulo))
             {
-                Debug.LogWarning("[CaseGenerator] Campo 'titulo' vacío o no encontrado");
-                return null;
-            }
-            if (string.IsNullOrWhiteSpace(descripcionPrompt) && string.IsNullOrWhiteSpace(descripcionFolio))
-            {
-                Debug.LogWarning("[CaseGenerator] Ni 'descripcionPrompt' ni 'descripcionFolio' encontrados");
+                Debug.LogWarning("[CaseGenerator] Campo 'TITULO' vacío o no encontrado. Texto raw: " + texto);
                 return null;
             }
             if (string.IsNullOrWhiteSpace(coartada))
             {
-                Debug.LogWarning("[CaseGenerator] Campo 'coartada' vacío o no encontrado");
+                Debug.LogWarning("[CaseGenerator] Campo 'COARTADA' vacío o no encontrado");
                 return null;
             }
 
-            // 6. Rellenar campos faltantes con defaults razonables
-            if (string.IsNullOrWhiteSpace(id)) id = Random.Range(100, 999).ToString();
-            if (string.IsNullOrWhiteSpace(descripcionPrompt)) descripcionPrompt = descripcionFolio;
+            // Rellenar campos faltantes con defaults razonables
+            if (string.IsNullOrWhiteSpace(descripcionPrompt)) descripcionPrompt = descripcionFolio ?? titulo;
             if (string.IsNullOrWhiteSpace(descripcionFolio)) descripcionFolio = descripcionPrompt;
-            if (string.IsNullOrWhiteSpace(actitud)) actitud = "Estás muy nervioso y no paras de moverte en la silla.";
+            if (string.IsNullOrWhiteSpace(actitud)) actitud = "Nervioso";
 
             return new GameContext.CasoDelito
             {
-                ID = id.PadLeft(3, '0').Length >= 3 ? id.PadLeft(3, '0').Substring(0, 3) : id,
+                ID = Random.Range(100, 999).ToString("000"),
                 TituloFolio = titulo.ToUpper().Trim(),
                 DescripcionFolio = descripcionFolio.Trim(),
                 DescripcionPrompt = descripcionPrompt.Trim(),
                 Coartada = coartada.Trim(),
                 Actitud = actitud.Trim(),
-                SecretoCulpable = secCulpable?.Trim() ?? "El crimen se cometió a una hora muy concreta que nadie te ha dicho.",
-                SecretoInocente = secInocente?.Trim() ?? "Estabas haciendo algo muy vergonzoso en tu coartada y no quieres decirlo."
+                Secreto = string.IsNullOrWhiteSpace(secreto) ? "El crimen se cometió a una hora muy concreta que nadie te ha dicho." : secreto.Trim(),
             };
         }
         catch (System.Exception ex)
@@ -344,17 +344,28 @@ AHORA GENERA UN JSON CON UN CASO INVENTADO POR TI:
     }
 
     /// <summary>
-    /// Busca un campo en el JSON probando múltiples nombres posibles.
+    /// Extrae un valor de la forma "Etiqueta: Valor" hasta el final de la línea.
+    /// Tolera sintaxis JSON (comillas, comas) por si la IA se confunde y genera JSON.
     /// </summary>
-    private string ObtenerCampo(JObject json, params string[] nombres)
+    private string ExtraerValorRegex(string texto, string etiqueta)
     {
-        foreach (string nombre in nombres)
+        // Soporta tanto "ETIQUETA:" como "\"ETIQUETA\":"
+        var match = Regex.Match(texto, $@"{etiqueta}\""?\s*:\s*([^\r\n]+)", RegexOptions.IgnoreCase);
+        if (match.Success)
         {
-            var valor = json[nombre];
-            if (valor != null && !string.IsNullOrWhiteSpace(valor.ToString()))
-                return valor.ToString();
+            string valor = match.Groups[1].Value.Trim();
+            
+            // Limpiar coma final de JSON si existe
+            if (valor.EndsWith(",")) 
+                valor = valor.Substring(0, valor.Length - 1).Trim();
+                
+            // Limpiar comillas si las puso
+            if (valor.StartsWith("\"") && valor.EndsWith("\"") && valor.Length > 1)
+                valor = valor.Substring(1, valor.Length - 2).Trim();
+                
+            return valor;
         }
-        return null;
+        return string.Empty;
     }
 
     private GameContext.CasoDelito ObtenerFallback()

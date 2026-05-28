@@ -39,6 +39,18 @@ public class MainMenuManager : MonoBehaviour
     private bool estaGenerando = false;
     private AsyncOperation operacionCargaEscena;
 
+    private void Awake()
+    {
+        // Limpieza automática a prueba de balas para Escena Única:
+        // Buscamos si el InterrogationManager está en la misma escena y lo obligamos a apagar su UI,
+        // pero dejamos el GameObject encendido para que el CaseGenerator pueda precargar de fondo.
+        InterrogationManager interrogation = FindAnyObjectByType<InterrogationManager>(FindObjectsInactive.Include);
+        if (interrogation != null)
+        {
+            interrogation.ForzarApagadoUI();
+        }
+    }
+
     private void Start()
     {
         CargarPreferencias();
@@ -62,27 +74,48 @@ public class MainMenuManager : MonoBehaviour
         if (estaGenerando) return;
         estaGenerando = true;
         
-        if (textoEstadoMenu != null) textoEstadoMenu.text = "Precargando caso...";
-        
-        // Se asume que caseGenerator usa la IAConfig actual
-        casoPreGenerado = await caseGenerator.GenerarCasoAsync();
-        
-        if (textoEstadoMenu != null) textoEstadoMenu.text = "Precargando motor de diálogo en VRAM...";
-        
-        // Hacer un ping a la IA ligera para que LM Studio la cargue en la tarjeta gráfica antes de empezar a jugar
-        await PrecargarModeloDialogo();
-        
-        if (textoEstadoMenu != null) 
-            textoEstadoMenu.text = casoPreGenerado != null ? "¡Sistemas listos! Pulsa Jugar." : "Error al precargar. Se generará al jugar.";
-        
-        estaGenerando = false;
+        try
+        {
+            if (textoEstadoMenu != null) textoEstadoMenu.text = "Precargando caso...";
+            
+            // Se asume que caseGenerator usa la IAConfig actual
+            casoPreGenerado = await caseGenerator.GenerarCasoAsync();
+            
+            // OPTIMIZACIÓN: Si usamos el mismo LLM para crear el caso y para hablar,
+            // no hace falta hacer un "ping" para cargarlo en VRAM porque ¡ya está cargado!
+            bool esMismoModelo = (iaConfig.urlModeloCasos == iaConfig.urlModeloDialogo) && 
+                                 (iaConfig.nombreModeloCasos == iaConfig.nombreModeloDialogo);
+                                 
+            if (!esMismoModelo)
+            {
+                if (textoEstadoMenu != null) textoEstadoMenu.text = "Precargando motor de diálogo en VRAM...";
+                await PrecargarModeloDialogo();
+            }
+            else
+            {
+                Debug.Log("[MainMenuManager] El modelo de casos y diálogo es el mismo. Se omite el ping de precarga por eficiencia.");
+            }
+            
+            if (textoEstadoMenu != null) 
+                textoEstadoMenu.text = casoPreGenerado != null ? "¡Sistemas listos! Pulsa Jugar." : "Error al precargar. Se generará al jugar.";
 
-        // Iniciar la precarga en segundo plano de la escena del juego (VR)
-        PrecargarEscenaJuegoBackground();
+            // Iniciar la precarga en segundo plano de la escena del juego (VR)
+            PrecargarEscenaJuegoBackground();
+        }
+        finally
+        {
+            estaGenerando = false;
+        }
     }
 
     private void PrecargarEscenaJuegoBackground()
     {
+        // Si estamos en arquitectura de Escena Única, NO hay que cargar ninguna escena
+        if (FindAnyObjectByType<InterrogationManager>(FindObjectsInactive.Include) != null)
+        {
+            return;
+        }
+
         if (operacionCargaEscena == null)
         {
             // Bajar la prioridad para que la precarga de la escena no dé tirones en el menú
@@ -168,11 +201,14 @@ public class MainMenuManager : MonoBehaviour
         if (voiceIdInput != null) voiceIdInput.gameObject.SetActive(necesitaApi);
     }
 
-    public void OnValoresEditados()
+    public void BotonRecargarCaso()
     {
-        // Se puede enlazar este método al OnEndEdit de los InputFields si se quiere
-        // que al cambiar la IA se regenere el caso.
+        // Este método está diseñado para conectarlo a un Botón de Unity.
+        // Aplica la nueva URL/Modelo que hayas escrito en la interfaz, guarda las preferencias, 
+        // y le pide a la IA que genere un caso nuevo inmediatamente.
+        GuardarPreferencias();
         AplicarAConfig();
+        
         if (caseGenerator != null)
         {
              _ = GenerarCasoBackgroundAsync();
@@ -215,19 +251,37 @@ public class MainMenuManager : MonoBehaviour
         // 2. Dar un pequeño respiro al hilo principal
         await Task.Delay(200);
 
-        if (operacionCargaEscena != null)
+        // BUSCAMOS SI ESTAMOS EN UNA ARQUITECTURA DE ESCENA ÚNICA
+        InterrogationManager interrogation = FindAnyObjectByType<InterrogationManager>(FindObjectsInactive.Include);
+        
+        if (interrogation != null)
         {
-            // Restaurar prioridad normal de carga para que la activación sea lo más rápida posible
-            Application.backgroundLoadingPriority = ThreadPriority.High;
+            // CERO LAG: Solo ocultamos el menú y arrancamos el interrogatorio
+            interrogation.gameObject.SetActive(true);
             
-            // Activamos la escena pre-cargada
-            operacionCargaEscena.allowSceneActivation = true;
+            // Ocultamos el canvas del menú de forma segura
+            Canvas menuCanvas = null;
+            if (textoEstadoMenu != null) menuCanvas = textoEstadoMenu.canvas;
+            if (menuCanvas == null) menuCanvas = GetComponentInParent<Canvas>();
+
+            if (menuCanvas != null) menuCanvas.gameObject.SetActive(false);
+            else this.gameObject.SetActive(false);
+
+            interrogation.PrepararNuevaPartida();
         }
         else
         {
-            // Fallback por si la asíncrona falló
-            Application.backgroundLoadingPriority = ThreadPriority.High;
-            SceneManager.LoadScene(nombreEscenaJuego);
+            // FALLBACK: Si el usuario sigue usando 2 escenas separadas
+            if (operacionCargaEscena != null)
+            {
+                Application.backgroundLoadingPriority = ThreadPriority.High;
+                operacionCargaEscena.allowSceneActivation = true;
+            }
+            else
+            {
+                Application.backgroundLoadingPriority = ThreadPriority.High;
+                SceneManager.LoadScene(nombreEscenaJuego);
+            }
         }
     }
 }

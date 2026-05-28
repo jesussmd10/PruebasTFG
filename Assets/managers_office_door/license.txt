@@ -1,0 +1,11 @@
+Model Information:
+* title:	Manager's Office Door
+* source:	https://sketchfab.com/3d-models/managers-office-door-0377d1a8edb649e4a4a7d8058d9939a9
+* author:	Liam Moffitt (https://sketchfab.com/divadan)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Manager's Office Door" (https://sketchfab.com/3d-models/managers-office-door-0377d1a8edb649e4a4a7d8058d9939a9) by Liam Moffitt (https://sketchfab.com/divadan) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

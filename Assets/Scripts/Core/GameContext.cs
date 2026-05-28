@@ -19,14 +19,22 @@ public class GameContext : MonoBehaviour
         public string DescripcionPrompt;
         public string Coartada;
         public string Actitud;
-        public string SecretoCulpable;
-        public string SecretoInocente;
+        public bool EsCulpable;
+        public string Secreto;
     }
 
     private CasoDelito delitoActual;
     public CasoDelito DelitoActual => delitoActual;
 
     public static CasoDelito CasoPrecargado { get; set; }
+
+#if UNITY_EDITOR
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    private static void ResetStatics()
+    {
+        CasoPrecargado = null;
+    }
+#endif
 
     public bool EsCulpable => esCulpable;
     public float TiempoPartida => tiempoPartida;
@@ -42,9 +50,16 @@ public class GameContext : MonoBehaviour
             return;
         }
         Instance = this;
-        tiempoRestante = tiempoPartida;
+        ReiniciarEstado();
         // El caso se asigna después por CaseGenerator o InterrogationManager
-        Debug.Log($"Tiempo de partida inicializado: {tiempoPartida}s ({Mathf.FloorToInt(tiempoPartida/60)}:{Mathf.FloorToInt(tiempoPartida%60):00})");
+    }
+
+    public void ReiniciarEstado()
+    {
+        tiempoRestante = tiempoPartida;
+        juegoTerminado = false;
+        pistasDescubiertas = "";
+        Debug.Log($"[GameContext] Estado reiniciado para nueva partida. Tiempo: {tiempoPartida}s");
     }
 
     /// <summary>
