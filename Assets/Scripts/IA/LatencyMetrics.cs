@@ -84,7 +84,7 @@ public class LatencyMetrics : MonoBehaviour
     /// <summary>
     /// Llamar cuando la respuesta está completa. Guarda la métrica al CSV.
     /// </summary>
-    public void FinalizarMedicion(string respuestaCompleta, bool tienePista)
+    public void FinalizarMedicion(string respuestaCompleta, bool tienePista, int exactTokens = -1)
     {
         float tiempoTotal = (Time.realtimeSinceStartup - tiempoInicio) * 1000f;
 
@@ -92,8 +92,21 @@ public class LatencyMetrics : MonoBehaviour
         if (!primerTokenRecibido)
         {
             tiempoPrimerToken = tiempoTotal;
-            // Estimar tokens por palabras (aprox 1.3 tokens/palabra en español)
-            tokensContados = Mathf.RoundToInt(respuestaCompleta.Split(' ').Length * 1.3f);
+            // Usar tokens exactos si la API los proveyó, si no estimarlos
+            if (exactTokens > 0)
+            {
+                tokensContados = exactTokens;
+            }
+            else
+            {
+                // Estimar tokens por palabras (aprox 1.3 tokens/palabra en español)
+                tokensContados = Mathf.RoundToInt(respuestaCompleta.Split(' ').Length * 1.3f);
+            }
+        }
+        else if (exactTokens > 0)
+        {
+            // Si hubo streaming pero nos pasan el count exacto final, usarlo
+            tokensContados = exactTokens;
         }
 
         float tokensPerSeg = tiempoTotal > 0 ? (tokensContados / (tiempoTotal / 1000f)) : 0;
@@ -114,7 +127,7 @@ public class LatencyMetrics : MonoBehaviour
         sesionActual.Add(metrica);
         GuardarMetricaCSV(metrica);
 
-        Debug.Log($"[Métricas] {modeloActual} | 1er token: {tiempoPrimerToken:F0}ms | Total: {tiempoTotal:F0}ms | {tokensContados} tokens | {tokensPerSeg:F1} t/s");
+        Debug.Log($"[Métricas] {modeloActual} ({tipoActual}) | 1er token: {tiempoPrimerToken:F0}ms | Total: {tiempoTotal:F0}ms | {tokensContados} tokens | {tokensPerSeg:F1} t/s");
     }
 
     private void GuardarMetricaCSV(MetricaRespuesta m)

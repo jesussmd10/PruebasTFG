@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.AI;
 
 public class NPCMovement : MonoBehaviour
 {
@@ -22,9 +23,12 @@ public class NPCMovement : MonoBehaviour
     private Vector3 posicionInicial;
     private Quaternion rotacionInicial;
     private bool posicionGuardada = false;
+    
+    private NavMeshAgent navAgent;
 
     private void Awake()
     {
+        navAgent = GetComponent<NavMeshAgent>();
         GuardarPosicion();
     }
 
@@ -45,6 +49,8 @@ public class NPCMovement : MonoBehaviour
 
     public void ReiniciarMovimiento()
     {
+        if (navAgent != null) navAgent.enabled = false; // Apagar para teleportar
+
         GuardarPosicion();
         
         transform.position = posicionInicial;
@@ -52,6 +58,8 @@ public class NPCMovement : MonoBehaviour
         yaSeHaSentado = false;
         EstaLlegando = false;
         
+        if (navAgent != null) navAgent.enabled = true; // Volver a encender
+
         if (characterAnimator != null)
         {
             // Forzamos al animador a volver a su estado base (caminar)
@@ -77,30 +85,44 @@ public class NPCMovement : MonoBehaviour
         float distancia = Vector3.Distance(posicionPlanaNPC, posicionPlanaSilla);
 
         // ---> AQUÍ LO PONES: Justo después de saber a qué distancia estamos <---
-        if (distancia < 0.8f)
+        if (distancia < 1.5f)
         {
-            EstaLlegando = true; // Avisamos de que estamos a menos de 80cm
+            EstaLlegando = true; // Avisamos de que estamos a menos de 1.5m
         }
 
         if (distancia > distanciaMinima)
         {
-            // Moverse hacia la silla
-            transform.position = Vector3.MoveTowards(
-                transform.position,
-                silla.position,
-                velocidad * Time.deltaTime
-            );
-
-            // Mirar hacia la silla (Solo en el eje Y para que no se incline hacia el suelo)
-            Vector3 direccionSilla = silla.position - transform.position;
-            direccionSilla.y = 0; // Mantener la rotación plana
-            if (direccionSilla.sqrMagnitude > 0.001f)
+            // Usar NavMesh solo si está lejos (a más de 1.5 metros). 
+            // Esto evita que intente rodear la silla o la mesa si el NavMesh tiene un hueco ahí.
+            if (navAgent != null && navAgent.isOnNavMesh && distancia > 1.5f)
             {
-                transform.rotation = Quaternion.LookRotation(direccionSilla);
+                navAgent.speed = velocidad;
+                navAgent.SetDestination(silla.position);
+            }
+            else
+            {
+                if (navAgent != null) navAgent.enabled = false; // Apagar agente en el tramo final
+
+                // Aproximación final en línea recta perfecta
+                transform.position = Vector3.MoveTowards(
+                    transform.position,
+                    silla.position,
+                    velocidad * Time.deltaTime
+                );
+
+                Vector3 direccionSilla = silla.position - transform.position;
+                direccionSilla.y = 0; 
+                
+                // Congelamos la rotación cuando está muy cerca para que no dé ninguna vuelta ni baile
+                if (direccionSilla.sqrMagnitude > 0.05f)
+                {
+                    transform.rotation = Quaternion.LookRotation(direccionSilla);
+                }
             }
         }
         else
         {
+            if (navAgent != null) navAgent.enabled = false; 
             Sentarse();
         }
     }

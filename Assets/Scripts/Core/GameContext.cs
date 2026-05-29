@@ -21,6 +21,7 @@ public class GameContext : MonoBehaviour
         public string Actitud;
         public bool EsCulpable;
         public string Secreto;
+        public string Sospechoso;
     }
 
     private CasoDelito delitoActual;

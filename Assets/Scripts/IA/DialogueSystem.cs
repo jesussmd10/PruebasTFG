@@ -81,7 +81,7 @@ public class DialogueSystem : MonoBehaviour
 
         string prompt = $@"
 [ROL]
-Personaje: Alex (28 años).
+Personaje: {caso.Sospechoso} (28 años).
 Situación: Interrogatorio policial en la comisaría. Estás siendo interrogado por un detective.
 Actitud: {caso.Actitud}
 ";
@@ -202,17 +202,21 @@ Actitud: {caso.Actitud}
         }
 
         prompt += $@"
-[SISTEMA DE ANIMACIONES (ESTRICTO)]
-Para que tu cuerpo se mueva, DEBES incluir OBLIGATORIAMENTE un paréntesis de acción al inicio de tu respuesta.
-PROHIBIDO USAR MÁS DE UN PARÉNTESIS. Sólo puedes usar un paréntesis al principio, y luego texto normal.
-PROHIBIDO INVENTAR DESCRIPCIONES. DENTRO DEL PARÉNTESIS SÓLO PUEDES ESCRIBIR UNA DE ESTAS PALABRAS EXACTAS (sin añadir nada más):
+[REGLA DE IDIOMA Y TRADUCCIÓN]
+Piensa y formula tus oraciones DIRECTAMENTE en español coloquial de España. ESTÁ TOTALMENTE PROHIBIDO usar traducciones literales del inglés (ej: nunca digas ""qué demonios"", di ""qué cojones"" o ""qué me estás contando""). No uses modismos ingleses. Habla como una persona real de la calle.
+
+[SISTEMA DE ANIMACIONES Y TOKENS (ESTRICTO)]
+Para que tu cuerpo se mueva, DEBES incluir un paréntesis de acción al inicio.
+REGLA CRÍTICA DE TOKENS: SÓLO PUEDES ESCRIBIR UN (1) ÚNICO PARÉNTESIS EN TODA TU RESPUESTA. DEBE IR AL PRINCIPIO Y YA ESTÁ.
+PROHIBIDO escribir múltiples paréntesis a lo largo del texto. Si lo haces (ej: '(furioso) texto (nervioso) texto'), gastas tokens inútilmente, el TTS falla y rompes el motor del juego.
+PROHIBIDO INVENTAR DESCRIPCIONES. DENTRO DEL ÚNICO PARÉNTESIS SÓLO PUEDES ESCRIBIR UNA DE ESTAS PALABRAS EXACTAS:
 1. Para estar asustado/nervioso/furioso: (tiembla) o (nervioso) o (suda) o (llora) o (furioso) o (pánico).
 2. Para negar una acusación: (niega) o (rechaza).
 3. Para mostrarte sereno/relajado: (calma) o (respira) o (tranquilo) o (suspira).
 MAL: (pánico) ¡No fui yo! (niega) Soy inocente.
 MAL: (se frota la frente sudando) ¡No fui yo!
 BIEN: (nervioso) ¡No fui yo! Soy inocente, joder.
-Si escribes más texto dentro del paréntesis que no sea una de esas palabras sueltas, EL JUEGO SE ROMPERÁ.
+Si escribes más de un paréntesis o usas palabras inventadas, EL JUEGO SE ROMPERÁ.
 
 [SISTEMA DE JUEGO (TAG PISTA)]
 Si te contradices con algo que has dicho antes, si revelas tu SECRETO (sea el criminal o el vergonzoso), o si revelas algún detalle vital que el detective no debería saber, DEBES escribir obligatoriamente un tag indicando tu error AL FINAL de tu respuesta, con este formato exacto: [PISTA: (breve descripción del fallo o secreto revelado)].
@@ -223,11 +227,11 @@ SÓLO úsalo para fallos graves en tu historia o cuando reveles tu secreto, NUNC
         historialDialogo.Clear();
         historialDialogo.Add(new { role = "system", content = prompt });
 
-        // PRE-SEED: Anclar al modelo con un primer intercambio que establece el caso
-        // Esto es CRUCIAL para modelos pequeños que tienden a alucinar e ignorar el system prompt
-        string respuestaPreseed = GenerarRespuestaPreseed(caso);
-        historialDialogo.Add(new { role = "user", content = $"Alex, sabes por qué estás aquí. Se te acusa de {caso.DescripcionPrompt}. ¿Qué tienes que decir?" });
-        historialDialogo.Add(new { role = "assistant", content = respuestaPreseed });
+        // PRE-SEED: Anclar al modelo (Meta-instrucción)
+        // Usamos asteriscos y formato meta para que el modelo inicie su estado interno
+        // sin considerar que esto fue una conversación hablada, evitando el error de "Ya te lo dije".
+        historialDialogo.Add(new { role = "user", content = "*El detective entra a la sala. Confirma que has entendido tu rol y estás listo para empezar.*" });
+        historialDialogo.Add(new { role = "assistant", content = "*Entendido. Estoy en mi personaje y listo para responder a la primera pregunta.*" });
 
         memoriaIniciada = true;
 
@@ -500,7 +504,8 @@ SÓLO úsalo para fallos graves en tu historia o cuando reveles tu secreto, NUNC
     /// </summary>
     private void PodarHistorial()
     {
-        int maxMensajes = iaConfig.maxMensajesHistorial;
+        // Forzar un máximo estricto de 6 mensajes (3 turnos) para evitar saturación y ralentización extrema en LLMs locales
+        int maxMensajes = Mathf.Min(iaConfig.maxMensajesHistorial, 6);
 
         // +3: system prompt + pre-seed user + pre-seed assistant
         if (historialDialogo.Count <= maxMensajes + 3) return;
@@ -514,36 +519,10 @@ SÓLO úsalo para fallos graves en tu historia o cuando reveles tu secreto, NUNC
         historialDialogo.AddRange(cabecera);
         historialDialogo.AddRange(recientes);
 
-        Debug.Log($"[Historial] Podado a {historialDialogo.Count} mensajes");
+        Debug.Log($"[Historial] Podado a {historialDialogo.Count} mensajes (límite de seguridad activado)");
     }
 
-    private string GenerarRespuestaPreseed(GameContext.CasoDelito caso)
-    {
-        string actitud = caso.Actitud.ToLower();
 
-        // Si la actitud denota miedo, nerviosismo o timidez
-        if (actitud.Contains("aterrado") || actitud.Contains("nervio") || actitud.Contains("tímido") || actitud.Contains("miedo") || actitud.Contains("asustado") || actitud.Contains("pánico"))
-        {
-            return $"(muy nervioso, tartamudeando) Mire, yo... yo no tengo nada que ver con eso. Se lo juro por mi vida. No entiendo qué hago aquí.";
-        }
-        // Si denota enfado, agresividad, bordería, furia, indignación o actitud desafiante
-        else if (actitud.Contains("furioso") || actitud.Contains("indignado") || actitud.Contains("borde") || actitud.Contains("defensiva") || actitud.Contains("grita") || actitud.Contains("enfado") || actitud.Contains("desprecio") || actitud.Contains("sarcás") || actitud.Contains("sarcas"))
-        {
-            return $"(golpea la mesa, con tono desafiante) ¡Escuche! Esto es una maldita broma. Yo no he hecho absolutamente nada. ¡No tienen derecho a retenerme ni a acusarme!";
-        }
-        // Si denota arrogancia, frialdad, tranquilidad, ciencia o prepotencia
-        else if (actitud.Contains("arrogante") || actitud.Contains("frío") || actitud.Contains("calma") || actitud.Contains("prepotencia") || actitud.Contains("científic") || actitud.Contains("calculador"))
-        {
-            return $"(sonríe arrogantemente, con absoluta calma) Por favor, detective. Esto es una absoluta pérdida de tiempo. No tienen ninguna base para tenerme aquí.";
-        }
-        // Si denota confusión o desorientación
-        else if (actitud.Contains("confuso") || actitud.Contains("desorientado"))
-        {
-            return $"(mira al suelo, confuso y desorientado) ¿Qué? No... no entiendo... yo no he hecho nada de eso... ¿Por qué me acusan a mí?";
-        }
-        // Fallback genérico neutral
-        return $"(serio) Mire, no tengo ninguna relación con ese asunto. Se están equivocando de persona.";
-    }
 
     // Clases para deserializar JSON de OpenAI-compatible
     private class RespuestaLLM { public List<Choice> choices; }

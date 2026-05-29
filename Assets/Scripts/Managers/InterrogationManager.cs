@@ -20,6 +20,7 @@ public class InterrogationManager : MonoBehaviour
 
     private string contenidoFolio = "";
     private bool juegoActivo = false;
+    private bool procesandoInterrogacion = false; // Lock para evitar saturar el LLM
 
     // Se llama desde el MainMenuManager para asegurar que no se pise la UI al arrancar
     public void ForzarApagadoUI()
@@ -166,8 +167,8 @@ public class InterrogationManager : MonoBehaviour
         // Establecer caso en GameContext
         GameContext.Instance.EstablecerCaso(caso);
 
-        // Culpabilidad aleatoria
-        bool esCulpable = Random.value > 0.5f;
+        // Culpabilidad: Respetar la que generó la IA (o el fallback) para este caso
+        bool esCulpable = caso.EsCulpable;
         GameContext.Instance.ConfigurarCulpabilidad(esCulpable);
         Debug.Log(esCulpable 
             ? "<color=red>🔴 EL SOSPECHOSO ES CULPABLE</color>" 
@@ -196,7 +197,7 @@ public class InterrogationManager : MonoBehaviour
 
         // Limpiar folio y mostrar caso real
         contenidoFolio = "";
-        ActualizarFolio($"Inicio del interrogatorio.\nMotivo: {caso.DescripcionFolio}\n\n");
+        ActualizarFolio($"<b>RESEÑA DE LOS HECHOS:</b>\n{caso.DescripcionFolio}\n\n");
     }
 
   
@@ -229,51 +230,66 @@ public class InterrogationManager : MonoBehaviour
 
     private async void ProcesarInterrogacion(string textoUsuario, bool usuarioGrita)
     {
-        Debug.Log($"Usuario: '{textoUsuario}' | Gritando: {usuarioGrita}");
-
-        // Obtener respuesta de IA (streaming o clásica según IAConfig)
-        string respuestaIA = await dialogueSystem.ObtenerRespuesta(textoUsuario, usuarioGrita);
-
-        if (string.IsNullOrEmpty(respuestaIA))
+        if (procesandoInterrogacion)
         {
-            Debug.LogError("Error: respuesta IA vacía");
+            Debug.LogWarning("El LLM ya está procesando una respuesta. Ignorando petición extra para no saturar.");
             return;
         }
-
-        // Log de la respuesta completa de la IA para depuración
-        Debug.Log($"Respuesta IA completa: '{respuestaIA}'");
-
-        // Detectar y procesar pista dinámica (e.g. [PISTA: Se contradijo con la hora])
-        string patronPista = @"\[PISTA[:\s]*(.*?)\]";
-        var matchPista = System.Text.RegularExpressions.Regex.Match(respuestaIA, patronPista, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
         
-        if (matchPista.Success)
+        procesandoInterrogacion = true;
+
+        try
         {
-            Debug.Log("¡PISTA DETECTADA en la respuesta!");
-            
-            string descripcionPista = matchPista.Groups[1].Value.Trim();
-            if (string.IsNullOrEmpty(descripcionPista) || descripcionPista.Length < 3)
+            Debug.Log($"Usuario: '{textoUsuario}' | Gritando: {usuarioGrita}");
+
+            // Obtener respuesta de IA (streaming o clásica según IAConfig)
+            string respuestaIA = await dialogueSystem.ObtenerRespuesta(textoUsuario, usuarioGrita);
+
+            if (string.IsNullOrEmpty(respuestaIA))
             {
-                descripcionPista = "El sospechoso se ha contradicho o reveló un dato clave.";
+                Debug.LogError("Error: respuesta IA vacía");
+                return;
             }
-            
-            GameContext.Instance.AñadirPista(descripcionPista);
-            
-            // Eliminar el tag de la respuesta para que no se escuche en TTS
-            respuestaIA = System.Text.RegularExpressions.Regex.Replace(respuestaIA, patronPista, "", System.Text.RegularExpressions.RegexOptions.IgnoreCase).Trim();
-        }
-        else
-        {
-            Debug.Log("No se detectó [PISTA] en esta respuesta.");
-        }
 
-        // Emitir evento para que NPCBehavior procese emociones
-        EventSystem.OnRespuestaIA.Invoke(respuestaIA);
+            // Log de la respuesta completa de la IA para depuración
+            Debug.Log($"Respuesta IA completa: '{respuestaIA}'");
 
-        // Reproducir la respuesta completa de una sola vez para mantener la entonación y las emociones naturales
-        if (!string.IsNullOrEmpty(respuestaIA))
+            // Detectar y procesar pista dinámica (e.g. [PISTA: Se contradijo con la hora])
+            string patronPista = @"\[PISTA[:\s]*(.*?)\]";
+            var matchPista = System.Text.RegularExpressions.Regex.Match(respuestaIA, patronPista, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            
+            if (matchPista.Success)
+            {
+                Debug.Log("¡PISTA DETECTADA en la respuesta!");
+                
+                string descripcionPista = matchPista.Groups[1].Value.Trim();
+                if (string.IsNullOrEmpty(descripcionPista) || descripcionPista.Length < 3)
+                {
+                    descripcionPista = "El sospechoso se ha contradicho o reveló un dato clave.";
+                }
+                
+                GameContext.Instance.AñadirPista(descripcionPista);
+                
+                // Eliminar el tag de la respuesta para que no se escuche en TTS
+                respuestaIA = System.Text.RegularExpressions.Regex.Replace(respuestaIA, patronPista, "", System.Text.RegularExpressions.RegexOptions.IgnoreCase).Trim();
+            }
+            else
+            {
+                Debug.Log("No se detectó [PISTA] en esta respuesta.");
+            }
+
+            // Emitir evento para que NPCBehavior procese emociones
+            EventSystem.OnRespuestaIA.Invoke(respuestaIA);
+
+            // Reproducir la respuesta completa de una sola vez para mantener la entonación y las emociones naturales
+            if (!string.IsNullOrEmpty(respuestaIA))
+            {
+                audioManager.ReproducirTexto(respuestaIA); // Pasamos respuestaIA con las marcas de emoción para que AudioManager las detecte
+            }
+        }
+        finally
         {
-            audioManager.ReproducirTexto(respuestaIA); // Pasamos respuestaIA con las marcas de emoción para que AudioManager las detecte
+            procesandoInterrogacion = false;
         }
     }
 
@@ -379,7 +395,9 @@ public class InterrogationManager : MonoBehaviour
 
         string estadoSiguienteCaso = "<i>Generando próximo caso en segundo plano...</i>";
         string resumen = $"<align=center><size=130%><b>RESUMEN DEL CASO:</b></size>\n" +
-                         $"<size=90%>- <b>Actitud:</b> {caso.Actitud}\n" +
+                         $"<size=110%><b>{caso.TituloFolio}</b></size>\n" +
+                         $"<size=90%><i>{caso.DescripcionFolio}</i>\n\n" +
+                         $"- <b>Actitud:</b> {caso.Actitud}\n" +
                          $"- <b>Coartada falsa:</b> {caso.Coartada}\n" +
                          $"- <b>Secreto {(eraCulpable ? "Criminal" : "Vergonzoso")}:</b> {caso.Secreto}\n\n" +
                          $"{estadoSiguienteCaso}</size></align>";
@@ -435,9 +453,7 @@ public class InterrogationManager : MonoBehaviour
 
             var caso = GameContext.Instance.DelitoActual;
             if (caso != null)
-            {
-                textoFolioVR.text = $"<b>CASO: {caso.ID} - {caso.TituloFolio}</b>\nSospechoso: Alex\n\n" + contenidoFolio;
-            }
+                textoFolioVR.text = $"<b>CASO: {caso.ID} - {caso.TituloFolio}</b>\n<b>Sospechoso: {caso.Sospechoso}</b>\n\n" + contenidoFolio;
             else
             {
                 textoFolioVR.text = contenidoFolio;

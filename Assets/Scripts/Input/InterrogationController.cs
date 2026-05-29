@@ -35,7 +35,8 @@ public class InterrogationController : MonoBehaviour
         {
             whisper.language = "es";
             // Un prompt en formato de frase natural ayuda más a Whisper que palabras sueltas.
-            whisper.initialPrompt = "Este es un interrogatorio policial en español. Las respuestas son directas. Vocabulario: coartada, crimen, sospechoso, pruebas, culpable, inocente, asesinato, fiscalía, delito, policía, detective.";
+            // Añadimos contexto coloquial y acento canario para que asocie las pronunciaciones omitidas (como "cuarta" por "coartada") con la jerga policial correcta.
+            whisper.initialPrompt = "Conversación y diálogo coloquial de un interrogatorio policial en España, con acento canario. Se usa vocabulario policial. Palabras clave importantes: coartada, crimen, asesinato, sospechoso, pruebas, culpable, inocente, detective, fiscal, cárcel, verdad, mentira, jurar, chacho.";
         }
     }
 
@@ -195,8 +196,9 @@ public class InterrogationController : MonoBehaviour
 
         int posicionFinal = Microphone.GetPosition(microfonoActual);
 
-        // Rescatar desde medio segundo antes
-        int inicioSeguro = posicionInicio - 8000;
+        // Rescatar desde 1 segundo antes (16000Hz * 1s)
+        // Esto evita que palabras largas como "coartada" se corten si el usuario habla antes de pulsar del todo el botón VR
+        int inicioSeguro = posicionInicio - 16000;
         
         // Manejar el caso en el que el buffer circular del micrófono haya dado la vuelta
         int totalMuestrasClip = clipGrabado.samples;

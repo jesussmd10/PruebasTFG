@@ -36,9 +36,11 @@ public class IAConfig : ScriptableObject
     public enum TTSProvider { EdgeTTS, OpenAI, ElevenLabs }
 
 
-    [Header("Personalidad")]
-    public string promptCulpable = "Eres Alex, un sospechoso CULPABLE. Debes mentir e inventar excusas.";
-    public string promptInocente = "Eres Alex, un sospechoso INOCENTE. Defiende tu inocencia.";
+    [Header("Prompts Extra")]
+    [TextArea(2, 5)]
+    public string promptCulpable = "Eres el sospechoso CULPABLE. Debes mentir e inventar excusas.";
+    [TextArea(2, 5)]
+    public string promptInocente = "Eres el sospechoso INOCENTE. Defiende tu inocencia.";
     
     [Header("Comportamiento")]
     public string tagPista = "[PISTA]";
