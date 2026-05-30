@@ -17,6 +17,27 @@ public class DialogueSystem : MonoBehaviour
     private List<object> historialDialogo = new List<object>();
     private bool memoriaIniciada = false;
     private GameContext.CasoDelito casoActual;
+    private System.Threading.CancellationTokenSource cancellationTokenSource;
+
+    public void LimpiarHistorial()
+    {
+        historialDialogo.Clear();
+        memoriaIniciada = false;
+        
+        // Cancelar cualquier conexión HTTP de streaming en curso
+        if (cancellationTokenSource != null)
+        {
+            cancellationTokenSource.Cancel();
+            cancellationTokenSource.Dispose();
+        }
+        cancellationTokenSource = new System.Threading.CancellationTokenSource();
+        
+        // Limpiar cualquier frase residual en la cola para que el TTS no hable de más
+        while (colaFrasesParaTTS.TryDequeue(out _)) { }
+        streamingEnCurso = false;
+        
+        Debug.Log("[DialogueSystem] Memoria conversacional y colas de audio reseteadas.");
+    }
 
     /// <summary>
     /// Indica si el sistema de streaming está activo (para que otros scripts sepan).
@@ -339,6 +360,9 @@ SÓLO úsalo para fallos graves en tu historia o cuando reveles tu secreto, NUNC
 
         streamingEnCurso = true;
 
+        if (cancellationTokenSource == null) cancellationTokenSource = new System.Threading.CancellationTokenSource();
+        var token = cancellationTokenSource.Token;
+
         try
         {
             // Todo el I/O HTTP corre en un hilo del ThreadPool, NO en el hilo principal de Unity
@@ -351,13 +375,13 @@ SÓLO úsalo para fallos graves en tu historia o cuando reveles tu secreto, NUNC
                 var request = new HttpRequestMessage(HttpMethod.Post, url);
                 request.Content = content;
 
-                var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+                var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, token);
                 response.EnsureSuccessStatusCode();
 
                 using (var stream = await response.Content.ReadAsStreamAsync())
                 using (var reader = new StreamReader(stream))
                 {
-                    while (!reader.EndOfStream)
+                    while (!reader.EndOfStream && !token.IsCancellationRequested)
                     {
                         string line = await reader.ReadLineAsync();
                         if (string.IsNullOrEmpty(line)) continue;
@@ -405,6 +429,12 @@ SÓLO úsalo para fallos graves en tu historia o cuando reveles tu secreto, NUNC
             Debug.Log($"[Streaming] Respuesta completa ({resultado.Length} chars)");
             return resultado;
         }
+        catch (OperationCanceledException)
+        {
+            streamingEnCurso = false;
+            Debug.Log("[Streaming] Operación cancelada por reinicio. Abortando sin fallback.");
+            return "";
+        }
         catch (Exception ex)
         {
             streamingEnCurso = false;
@@ -438,7 +468,18 @@ SÓLO úsalo para fallos graves en tu historia o cuando reveles tu secreto, NUNC
             request.SetRequestHeader("Content-Type", "application/json");
 
             var operacion = request.SendWebRequest();
-            while (!operacion.isDone) await Task.Yield();
+            var token = cancellationTokenSource?.Token ?? default;
+            
+            while (!operacion.isDone)
+            {
+                if (token.IsCancellationRequested)
+                {
+                    request.Abort();
+                    Debug.Log("[DialogueSystem] Petición clásica abortada por reinicio.");
+                    return "";
+                }
+                await Task.Yield();
+            }
 
             if (request.result == UnityWebRequest.Result.Success)
             {

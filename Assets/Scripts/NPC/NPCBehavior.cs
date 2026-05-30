@@ -107,9 +107,23 @@ public class NPCBehavior : MonoBehaviour
         textoLimpio = textoLimpio.Replace("]", "");
 
         // 5. Limpiar espacios múltiples y saltos de línea extra
-        textoLimpio = Regex.Replace(textoLimpio, @"\s{2,}", " ");
+        textoLimpio = Regex.Replace(textoLimpio, @"\s{2,}", " ").Trim();
 
-        return textoLimpio.Trim();
+        // 6. Escapar comillas dobles cambiándolas por simples para que no rompan los argumentos del TTS en la consola
+        textoLimpio = textoLimpio.Replace("\"", "'");
+
+        // 6. FALLBACK A PRUEBA DE BALAS: Si el LLM metió TODO el texto entre asteriscos/paréntesis 
+        // y el borrado agresivo nos dejó un texto vacío o solo con puntuación (lo que crashea el TTS)
+        if (string.IsNullOrWhiteSpace(textoLimpio) || Regex.IsMatch(textoLimpio, @"^[\p{P}\s]*$"))
+        {
+            // Revertimos al texto original pero solo le quitamos los caracteres problemáticos
+            string textoRescate = textoCompleto.Replace("*", "").Replace("(", "").Replace(")", "").Replace("[", "").Replace("]", "");
+            textoRescate = Regex.Replace(textoRescate, @"\[?\s*PISTA\s*\]?", "", RegexOptions.IgnoreCase);
+            textoLimpio = Regex.Replace(textoRescate, @"\s{2,}", " ").Trim();
+            UnityEngine.Debug.LogWarning("[NPCBehavior] El texto limpio quedó vacío (el LLM usó mal los asteriscos). Usando texto de rescate: " + textoLimpio);
+        }
+
+        return textoLimpio;
     }
 
     /// <summary>

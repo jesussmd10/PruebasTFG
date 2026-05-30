@@ -78,16 +78,19 @@ REGLAS NARRATIVAS:
 4. HILO CONDUCTOR: Conecta el crimen, la coartada y el secreto usando un objeto específico, un testigo o un lugar muy concreto para darle realismo y cohesión.
 5. ACTITUD: 1 o 2 adjetivos máximo, MUY ESCUETO (ej: Tranquilo pero nervioso).
 6. FORMATO POLICIAL: TODO debe estar en TERCERA PERSONA (él). El sospechoso es un HOMBRE. Prohibido usar 'yo' o 'tú'.
-7. CREATIVIDAD: Escribe párrafos ricos e interesantes. SÓLO genera el XML.
 
-PLANTILLA:
+REGLA CRÍTICA DE FORMATO:
+ES OBLIGATORIO usar formato XML. NO uses Markdown. NO escribas texto fuera del XML. NO renombres las etiquetas. Tienes que devolver EXACTAMENTE esta estructura:
+
+<caso>
 <titulo>Título (máx 5 palabras)</titulo>
 <sospechoso>Nombre masculino completo inventado</sospechoso>
 <descripcion_folio>Resumen policial detallado del caso (1 párrafo largo)</descripcion_folio>
 <descripcion_prompt>Contexto rico para el interrogador (1 párrafo largo)</descripcion_prompt>
 <coartada>Su coartada detallada (1 párrafo largo)</coartada>
 <actitud>Adjetivos (ej: Tranquilo pero nervioso)</actitud>
-<secreto>El secreto real bien detallado (1 párrafo largo)</secreto>";
+<secreto>El secreto real bien detallado (1 párrafo largo)</secreto>
+</caso>";
 
         if (inteligencia == NivelInteligencia.Simple)
         {
@@ -283,17 +286,29 @@ PLANTILLA:
 
     private string ExtraerValorRegex(string texto, string etiqueta)
     {
-        // Busca el contenido exacto entre <etiqueta> y </etiqueta>, ignorando mayúsculas y permitiendo saltos de línea dentro
-        var match = Regex.Match(texto, $@"<{etiqueta}>(.*?)</{etiqueta}>", RegexOptions.IgnoreCase | RegexOptions.Singleline);
-        if (match.Success)
+        // 1. Intento principal: Formato XML (El ideal y esperado)
+        var matchXml = Regex.Match(texto, $@"<{etiqueta}>(.*?)</{etiqueta}>", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+        if (matchXml.Success)
         {
-            string valor = match.Groups[1].Value.Trim();
-                
-            // Limpiar asteriscos o formato basura que a veces se cuele dentro
-            valor = valor.Trim(' ', '\t', '\r', '\n', '"', '\'', '*');
-                
-            return valor;
+            return matchXml.Groups[1].Value.Trim(' ', '\t', '\r', '\n', '"', '\'', '*');
         }
+
+        // 2. Fallback A PRUEBA DE BALAS: Si el LLM ignora el XML y usa Markdown (ej. "**etiqueta:** valor")
+        string patronMarkdown = $@"\*\*{etiqueta}[^\*]*\*\*:?\s*(.*?)(?=\*\*|$)";
+        var matchMd = Regex.Match(texto, patronMarkdown, RegexOptions.IgnoreCase | RegexOptions.Singleline);
+        if (matchMd.Success)
+        {
+            return matchMd.Groups[1].Value.Trim(' ', '\t', '\r', '\n', '"', '\'', '*');
+        }
+
+        // 3. Fallback extremo: Si lo pone en texto plano (ej. "etiqueta: valor")
+        string patronPlano = $@"(?im)^{etiqueta}[^:]*:\s*(.*?)(?=\n[A-Z_]+:|$)";
+        var matchPlano = Regex.Match(texto, patronPlano, RegexOptions.IgnoreCase | RegexOptions.Singleline);
+        if (matchPlano.Success)
+        {
+            return matchPlano.Groups[1].Value.Trim(' ', '\t', '\r', '\n', '"', '\'', '*');
+        }
+
         return string.Empty;
     }
 

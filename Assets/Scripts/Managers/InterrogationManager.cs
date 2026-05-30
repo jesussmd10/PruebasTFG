@@ -36,6 +36,17 @@ public class InterrogationManager : MonoBehaviour
 
         if (panelVeredicto != null) panelVeredicto.SetActive(false);
 
+        // Limpiar el historial conversacional y colas de texto antes de arrancar
+        if (dialogueSystem != null)
+        {
+            dialogueSystem.LimpiarHistorial();
+        }
+        
+        if (audioManager != null)
+        {
+            audioManager.PararYLimpiarAudio();
+        }
+
         // Buscar y reiniciar el movimiento del NPC para que vuelva a hacer la animación de llegada
         NPCMovement npcMovement = UnityEngine.Object.FindFirstObjectByType<NPCMovement>(FindObjectsInactive.Include);
         if (npcMovement != null)

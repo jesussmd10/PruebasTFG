@@ -57,6 +57,35 @@ public class AudioManager : MonoBehaviour
     }
 
     /// <summary>
+    /// Limpia todas las colas de audio y detiene cualquier reproducción y descarga en curso.
+    /// Vital para reiniciar el juego sin arrastrar audios fantasma del caso anterior.
+    /// </summary>
+    public void PararYLimpiarAudio()
+    {
+        colaFrases.Clear();
+        colaClipsListos.Clear();
+        
+        if (audioSource != null)
+        {
+            if (audioSource.isPlaying) audioSource.Stop();
+            audioSource.clip = null; // CRÍTICO: Evita que PlayOnAwake reproduzca el último clip al reiniciar el NPC
+        }
+        
+        reproduciendoCola = false;
+        generandoEnFondo = false;
+        
+        StopAllCoroutines(); 
+
+        // Si EdgeTTS estaba buscando su ruta al iniciar y lo hemos cortado, lo reactivamos
+        if (iaConfig != null && iaConfig.ttsProvider == IAConfig.TTSProvider.EdgeTTS && !edgeTtsBuscado)
+        {
+            StartCoroutine(BuscarEdgeTTS());
+        }
+
+        UnityEngine.Debug.Log("[AudioManager] Colas de TTS limpiadas y audio detenido.");
+    }
+
+    /// <summary>
     /// Encola una frase para reproducción. Se usa desde el streaming.
     /// Inicia la descarga en segundo plano y la reproducción si no están activas.
     /// </summary>
@@ -227,11 +256,10 @@ public class AudioManager : MonoBehaviour
             yield return null;
         }
 
-        // 5. Devolver al sospechoso a Calmado/Idle si toda la interacción ha finalizado
-        if (colaClipsListos.Count == 0 && !generandoEnFondo && colaFrases.Count == 0)
-        {
-            EventSystem.OnEmotionChanged.Invoke(EmotionState.Calmado);
-        }
+        // 5. Devolver al sospechoso a Calmado/Idle en cuanto el clip termine.
+        // Esto evita que siga moviendo los labios (animación Hablando) 
+        // en los micro-cortes si está esperando a que descargue el siguiente audio.
+        EventSystem.OnEmotionChanged.Invoke(EmotionState.Calmado);
     }
 
     /// <summary>
