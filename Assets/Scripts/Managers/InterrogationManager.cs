@@ -265,9 +265,9 @@ public class InterrogationManager : MonoBehaviour
             // Log de la respuesta completa de la IA para depuración
             Debug.Log($"Respuesta IA completa: '{respuestaIA}'");
 
-            // Detectar y procesar pista dinámica (e.g. [PISTA: Se contradijo con la hora])
-            string patronPista = @"\[PISTA[:\s]*(.*?)\]";
-            var matchPista = System.Text.RegularExpressions.Regex.Match(respuestaIA, patronPista, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+            // Detectar y procesar pista dinámica con el nuevo formato [PISTA: ...]
+            string patronPista = @"\[PISTA:\s*(.*?)\]";
+            var matchPista = System.Text.RegularExpressions.Regex.Match(respuestaIA, patronPista, System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Singleline);
             
             if (matchPista.Success)
             {
@@ -292,11 +292,8 @@ public class InterrogationManager : MonoBehaviour
             // Emitir evento para que NPCBehavior procese emociones
             EventSystem.OnRespuestaIA.Invoke(respuestaIA);
 
-            // Reproducir la respuesta completa de una sola vez para mantener la entonación y las emociones naturales
-            if (!string.IsNullOrEmpty(respuestaIA))
-            {
-                audioManager.ReproducirTexto(respuestaIA); // Pasamos respuestaIA con las marcas de emoción para que AudioManager las detecte
-            }
+            // Reproducir la respuesta ya no se hace aquí. 
+            // DialogueSystem encola directamente a AudioManager mediante OnFraseListaParaTTS (tanto en streaming como clásico).
         }
         finally
         {

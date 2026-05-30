@@ -9,6 +9,7 @@ using System.Net.Http;
 using System.IO;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Text.RegularExpressions;
 
 
 public class DialogueSystem : MonoBehaviour
@@ -34,7 +35,6 @@ public class DialogueSystem : MonoBehaviour
         
         // Limpiar cualquier frase residual en la cola para que el TTS no hable de más
         while (colaFrasesParaTTS.TryDequeue(out _)) { }
-        streamingEnCurso = false;
         
         Debug.Log("[DialogueSystem] Memoria conversacional y colas de audio reseteadas.");
     }
@@ -49,8 +49,7 @@ public class DialogueSystem : MonoBehaviour
 
     // Colas thread-safe para pasar datos del hilo de fondo al hilo principal de Unity
     // Esto evita el "reloj" de bloqueo en VR
-    private readonly ConcurrentQueue<string> colaFrasesParaTTS = new ConcurrentQueue<string>();
-    private volatile bool streamingEnCurso = false;
+    private readonly ConcurrentQueue<(string frase, EmotionState emocion)> colaFrasesParaTTS = new ConcurrentQueue<(string, EmotionState)>();
 
     private void Start()
     {
@@ -66,14 +65,16 @@ public class DialogueSystem : MonoBehaviour
     /// </summary>
     private void Update()
     {
-        if (!streamingEnCurso) return;
 
         // Despachar frases completas para TTS
-        while (colaFrasesParaTTS.TryDequeue(out var frase))
+        while (colaFrasesParaTTS.TryDequeue(out var tupla))
         {
+            string frase = tupla.frase;
+            EmotionState emocion = tupla.emocion;
+            
             // Limpiar tartamudeos con guión que el TTS lee mal (ej: "N-no" -> "no", "P-pero" -> "pero")
             frase = System.Text.RegularExpressions.Regex.Replace(frase, @"(?i)\b[a-zñáéíóú]-", "");
-            EventSystem.OnFraseListaParaTTS.Invoke(frase);
+            EventSystem.OnFraseListaParaTTS.Invoke(frase, emocion);
         }
     }
 
@@ -102,10 +103,26 @@ public class DialogueSystem : MonoBehaviour
 
         string prompt = $@"
 [ROL]
-Personaje: {caso.Sospechoso} (28 años).
+Personaje: {caso.Sospechoso}.
 Situación: Interrogatorio policial en la comisaría. Estás siendo interrogado por un detective.
 Actitud: {caso.Actitud}
 ";
+
+        // --- DINÁMICA DE PISTAS SEGÚN ACTITUD ---
+        string reglaPistasActitud = "";
+        string actitudLower = caso.Actitud.ToLower();
+        if (actitudLower.Contains("terc") || actitudLower.Contains("chul") || actitudLower.Contains("agresiv") || actitudLower.Contains("defensiv"))
+        {
+            reglaPistasActitud = "Por tu actitud dura y a la defensiva, eres MUY DIFÍCIL de quebrar. NUNCA generes una pista a menos que el detective descubra una contradicción absoluta e innegable.";
+        }
+        else if (actitudLower.Contains("nervios") || actitudLower.Contains("intranquil") || actitudLower.Contains("asustad") || actitudLower.Contains("mied") || actitudLower.Contains("insegur"))
+        {
+            reglaPistasActitud = "Por tu actitud nerviosa y asustada, eres MUY PROPENSO a equivocarte. Si el detective te presiona lo más mínimo o te intimida, debes soltar una pista revelando información por accidente.";
+        }
+        else
+        {
+            reglaPistasActitud = "Suelta una pista solo si el detective hace una buena deducción, te acorrala lógicamente o te pilla en una mentira.";
+        }
 
         // --- REGLAS SEGÚN INTELIGENCIA ---
         if (inteligencia == NivelInteligencia.Simple)
@@ -223,36 +240,60 @@ Actitud: {caso.Actitud}
         }
 
         prompt += $@"
-[REGLA DE IDIOMA Y TRADUCCIÓN]
-Piensa y formula tus oraciones DIRECTAMENTE en español coloquial de España. ESTÁ TOTALMENTE PROHIBIDO usar traducciones literales del inglés (ej: nunca digas ""qué demonios"", di ""qué cojones"" o ""qué me estás contando""). No uses modismos ingleses. Habla como una persona real de la calle.
+[REGLA DE IDIOMA Y TRADUCCIÓN - ¡CRÍTICO!]
+¡ADVERTENCIA! Piensa y formula tus oraciones DIRECTAMENTE en español coloquial de España.
+ESTÁ ESTRICTAMENTE PROHIBIDO:
+- Usar traducciones literales del inglés (Spanglish) o sonar como una mala película doblada.
+- Usar estas palabras/frases prohibidas: ""Maldición"", ""Qué demonios"", ""Santa mierda"", ""Oh mi Dios"", ""Maldita sea"", ""Mi malo"", ""Basura"", ""Demonios"".
+- Traducir literalmente estructuras inglesas (ej. no digas ""Tú mejor que no"", ""Yo solo estaba..."", ""Haz sentido"").
 
-[SISTEMA DE ANIMACIONES Y TOKENS (ESTRICTO)]
-Para que tu cuerpo se mueva, DEBES incluir un paréntesis de acción al inicio.
-REGLA CRÍTICA DE TOKENS: SÓLO PUEDES ESCRIBIR UN (1) ÚNICO PARÉNTESIS EN TODA TU RESPUESTA. DEBE IR AL PRINCIPIO Y YA ESTÁ.
-PROHIBIDO escribir múltiples paréntesis a lo largo del texto. Si lo haces (ej: '(furioso) texto (nervioso) texto'), gastas tokens inútilmente, el TTS falla y rompes el motor del juego.
-PROHIBIDO INVENTAR DESCRIPCIONES. DENTRO DEL ÚNICO PARÉNTESIS SÓLO PUEDES ESCRIBIR UNA DE ESTAS PALABRAS EXACTAS:
-1. Para estar asustado/nervioso/furioso: (tiembla) o (nervioso) o (suda) o (llora) o (furioso) o (pánico).
-2. Para negar una acusación: (niega) o (rechaza).
-3. Para mostrarte sereno/relajado: (calma) o (respira) o (tranquilo) o (suspira).
-MAL: (pánico) ¡No fui yo! (niega) Soy inocente.
-MAL: (se frota la frente sudando) ¡No fui yo!
-BIEN: (nervioso) ¡No fui yo! Soy inocente, joder.
-Si escribes más de un paréntesis o usas palabras inventadas, EL JUEGO SE ROMPERÁ.
+ERRORES GRAMATICALES (¡MUY IMPORTANTE!):
+Debido a tu inteligencia, debes tener MUCHO CUIDADO con la gramática en español:
+- Di siempre: ""mala persona"" (El género correcto).
+- Di siempre: ""el agua"" (El género correcto).
+- Di siempre: ""me encuentro bien"" o ""estoy bien"".
+- Di siempre: ""Soy inocente"" o ""Yo no fui"" (con el verbo SER obligatoriamente).
+- Usa oraciones MUY CORTAS. Menos palabras significa menos posibilidades de equivocarte. No des rodeos. Ve al grano de forma directa.
+- Nunca pidas disculpas como ""Lo siento mucho"". Eres de la calle, tienes actitud. No eres un robot educado.
+- Expresiones españolas obligatorias (usa alguna de estas): ""¡Qué cojones!"", ""¡Me cago en la puta!"", ""¡Joder!"", ""¡Ni de coña!"", ""¡Estás flipando!"", ""¿De qué vas?"", ""¡Hostia!"".
 
-[SISTEMA DE JUEGO (TAG PISTA)]
-Si te contradices con algo que has dicho antes, si revelas tu SECRETO (sea el criminal o el vergonzoso), o si revelas algún detalle vital que el detective no debería saber, DEBES escribir obligatoriamente un tag indicando tu error AL FINAL de tu respuesta, con este formato exacto: [PISTA: (breve descripción del fallo o secreto revelado)].
-Regla de oro: Escribe la descripción de la pista de forma neutral, objetiva y en tercera persona, como si fuera una nota del detective. NO escribas preguntas ni monólogos internos.
-Ejemplo: [PISTA: El sospechoso mencionó la hora exacta del asesinato sin que se lo hubieran dicho] o [PISTA: El sospechoso confesó que estaba mintiendo en su coartada porque estaba comprando drogas].
-SÓLO úsalo para fallos graves en tu historia o cuando reveles tu secreto, NUNCA por simple nerviosismo o si el detective solo te está insultando.";
+[SISTEMA DE ANIMACIONES Y METADATOS - ¡OBLIGATORIO AL FINAL!]
+ESTÁ ESTRICTAMENTE PROHIBIDO USAR ASTERISCOS (**) EN TU RESPUESTA. No narres acciones corporales. Sólo habla.
+En su lugar, usarás un sistema de corchetes al FINAL EXACTO de tu texto.
+
+REGLAS PARA ANIMACIONES:
+Al final de tu respuesta (y antes de la pista si la hay), DEBES añadir tu estado de animación usando UNO de estos 3 corchetes:
+- [ANIMACION: NERVIOSO] (Si estás asustado, sudando, mintiendo con dificultad).
+- [ANIMACION: NEGACION] (SÓLO si niegas rotundamente una acusación sobre ti mismo o sobre tu implicación).
+- [ANIMACION: IDLE] (Para cualquier otro caso, estado de calma o base).
+
+FORMATO EXACTO Y OBLIGATORIO:
+Yo no sé de qué me estás hablando. [ANIMACION: IDLE]
+
+[SISTEMA DE JUEGO (REVELACIÓN DE PISTAS)]
+¡ATENCIÓN! Usaremos un sistema mucho más natural de corchetes.
+Si te contradices con algo que has dicho antes, si revelas tu SECRETO (sea el criminal o el vergonzoso), o si revelas algún detalle vital de el caso que el detective no debería saber (como un arma escondida, una persona implicada, o una situación clave), DEBES añadir un corchete especial AL FINAL de tu respuesta, DESPUÉS de la animación.
+
+FORMATO EXACTO Y OBLIGATORIO (CON PISTA Y ANIMACIÓN):
+Vale, es cierto, no estaba allí... ¡Pero yo no tenía ningún cuchillo! [ANIMACION: NERVIOSO] [PISTA: ARMA. El sospechoso mencionó un cuchillo sin que la policía se lo hubiera dicho.]
+
+CATEGORÍAS DE PISTAS (Usa la primera palabra dentro del corchete de la pista):
+- ARMA: Detalles sobre cómo se cometió el crimen.
+- SITUACIÓN: Contradicciones sobre dónde estaba o qué hacía.
+- PERSONA: Mención a cómplices o personas relacionadas.
+- SECRETO: Revelación de su secreto inconfesable.
+
+REGLA DE DIFICULTAD BASADA EN TU ACTITUD:
+- {reglaPistasActitud}
+
+Regla de oro: Escribe la descripción de la pista en TERCERA PERSONA, de forma neutral y objetiva (como una nota policial). SÓLO usa el formato [PISTA: ...] si revelas algo útil para el caso, NUNCA por simple nerviosismo o charla vacía.";
 
         historialDialogo.Clear();
         historialDialogo.Add(new { role = "system", content = prompt });
 
         // PRE-SEED: Anclar al modelo (Meta-instrucción)
-        // Usamos asteriscos y formato meta para que el modelo inicie su estado interno
-        // sin considerar que esto fue una conversación hablada, evitando el error de "Ya te lo dije".
         historialDialogo.Add(new { role = "user", content = "*El detective entra a la sala. Confirma que has entendido tu rol y estás listo para empezar.*" });
-        historialDialogo.Add(new { role = "assistant", content = "*Entendido. Estoy en mi personaje y listo para responder a la primera pregunta.*" });
+        historialDialogo.Add(new { role = "assistant", content = "Entendido. Estoy en mi personaje y listo para responder a la primera pregunta. [ANIMACION: IDLE]" });
 
         memoriaIniciada = true;
 
@@ -318,14 +359,42 @@ SÓLO úsalo para fallos graves en tu historia o cuando reveles tu secreto, NUNC
             LatencyMetrics.Instance.FinalizarMedicion(resultado, tienePista);
         }
 
-        // Añadir respuesta al historial
+        // Añadir respuesta al historial (¡SANEADA para evitar retroalimentación de alucinaciones!)
         if (resultado != null)
         {
-            historialDialogo.Add(new { role = "assistant", content = resultado });
+            string resultadoSaneado = LimpiarRespuestaParaMemoria(resultado);
+            historialDialogo.Add(new { role = "assistant", content = resultadoSaneado });
         }
 
         EventSystem.OnIAProcesando.Invoke(false);
         return resultado;
+    }
+
+    /// <summary>
+    /// Limpia el texto de la IA antes de guardarlo en memoria.
+    /// Extrae la emoción principal y borra cualquier asterisco inventado (*sonríe*).
+    /// Así evitamos que la IA aprenda de sus propios errores.
+    /// </summary>
+    private string LimpiarRespuestaParaMemoria(string textoOriginal)
+    {
+        if (string.IsNullOrEmpty(textoOriginal)) return textoOriginal;
+
+        string emocionValida = "[ANIMACION: IDLE]"; 
+        
+        var matchAnim = Regex.Match(textoOriginal, @"\[ANIMACION:\s*(.*?)\]", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+        if (matchAnim.Success)
+        {
+            string animText = matchAnim.Groups[1].Value.Trim().ToUpper();
+            if (animText.Contains("NERVIOSO")) emocionValida = "[ANIMACION: NERVIOSO]";
+            else if (animText.Contains("NEGACION")) emocionValida = "[ANIMACION: NEGACION]";
+        }
+
+        // Borrar todos los corchetes de animación de la frase para reconstruirla limpia al final
+        string textoLimpio = Regex.Replace(textoOriginal, @"\[ANIMACION:.*?\]", "", RegexOptions.IgnoreCase).Trim();
+        // Borrar asteriscos por si acaso la IA sigue inventándolos (evita retroalimentación)
+        textoLimpio = Regex.Replace(textoLimpio, @"\*.*?\*", "").Trim();
+
+        return $"{textoLimpio} {emocionValida}";
     }
 
     /// <summary>
@@ -358,7 +427,6 @@ SÓLO úsalo para fallos graves en tu historia o cuando reveles tu secreto, NUNC
 
         string jsonBody = JsonConvert.SerializeObject(datos);
 
-        streamingEnCurso = true;
 
         if (cancellationTokenSource == null) cancellationTokenSource = new System.Threading.CancellationTokenSource();
         var token = cancellationTokenSource.Token;
@@ -369,7 +437,8 @@ SÓLO úsalo para fallos graves en tu historia o cuando reveles tu secreto, NUNC
             string resultado = await Task.Run(async () =>
             {
                 string textoAcumulado = "";
-                string bufferFrase = "";
+                bool animacionProcesada = false;
+                EmotionState emocionActual = EmotionState.Calmado;
 
                 var content = new StringContent(jsonBody, Encoding.UTF8, "application/json");
                 var request = new HttpRequestMessage(HttpMethod.Post, url);
@@ -397,47 +466,52 @@ SÓLO úsalo para fallos graves en tu historia o cuando reveles tu secreto, NUNC
 
                             if (!string.IsNullOrEmpty(delta))
                             {
-                                // Registrar token para métricas
                                 if (LatencyMetrics.Instance != null)
                                     LatencyMetrics.Instance.RegistrarToken();
 
                                 textoAcumulado += delta;
-                                bufferFrase += delta;
 
-                                // Si la frase actual se considera completa (ej. punto y seguido), encolar y vaciar buffer
-                                if (EsFraseCompleta(bufferFrase))
+                                // Extraer emoción con corchetes (ahora al final o donde esté)
+                                if (!animacionProcesada)
                                 {
-                                    colaFrasesParaTTS.Enqueue(bufferFrase);
-                                    bufferFrase = "";
+                                    var matchAnim = Regex.Match(textoAcumulado, @"\[ANIMACION:\s*(.*?)\]", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+                                    if (matchAnim.Success)
+                                    {
+                                        string animText = matchAnim.Groups[1].Value.Trim().ToUpper();
+                                        if (animText.Contains("NERVIOSO")) emocionActual = EmotionState.Nervioso;
+                                        else if (animText.Contains("NEGACION")) emocionActual = EmotionState.Negando;
+                                        else emocionActual = EmotionState.Calmado;
+                                        
+                                        animacionProcesada = true;
+                                    }
                                 }
+
                             }
                         }
                         catch { /* Ignorar chunks mal formados */ }
                     }
                 }
 
-                // Encolar cualquier texto residual que no haya terminado en punto
-                if (!string.IsNullOrWhiteSpace(bufferFrase))
+                // Limpiamos la frase final para asegurar que tiene letras
+                string probandoBuffer = NPCBehavior.LimpiarTexto(textoAcumulado);
+                if (!string.IsNullOrWhiteSpace(probandoBuffer) && Regex.IsMatch(probandoBuffer, @"[a-zA-Z0-9\u00C0-\u017F]"))
                 {
-                    colaFrasesParaTTS.Enqueue(bufferFrase);
+                    colaFrasesParaTTS.Enqueue((textoAcumulado, emocionActual));
                 }
 
                 return textoAcumulado;
             });
 
-            streamingEnCurso = false;
             Debug.Log($"[Streaming] Respuesta completa ({resultado.Length} chars)");
             return resultado;
         }
         catch (OperationCanceledException)
         {
-            streamingEnCurso = false;
             Debug.Log("[Streaming] Operación cancelada por reinicio. Abortando sin fallback.");
             return "";
         }
         catch (Exception ex)
         {
-            streamingEnCurso = false;
             Debug.LogError($"[Streaming] Error: {ex.Message}. Cayendo a método clásico.");
             return await ObtenerRespuestaClasica();
         }
@@ -487,6 +561,20 @@ SÓLO úsalo para fallos graves en tu historia o cuando reveles tu secreto, NUNC
                 {
                     var respuesta = JsonConvert.DeserializeObject<RespuestaLLM>(request.downloadHandler.text);
                     string textoBruto = respuesta.choices[0].message.content;
+                    
+                    // Extraer emoción clásica
+                    EmotionState emocionDetectada = EmotionState.Calmado;
+                    var matchAnim = Regex.Match(textoBruto, @"\[ANIMACION:\s*(.*?)\]", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+                    if (matchAnim.Success)
+                    {
+                        string animText = matchAnim.Groups[1].Value.Trim().ToUpper();
+                        if (animText.Contains("NERVIOSO")) emocionDetectada = EmotionState.Nervioso;
+                        else if (animText.Contains("NEGACION")) emocionDetectada = EmotionState.Negando;
+                    }
+
+                    // Encolar texto bruto, se limpiará en TTS
+                    colaFrasesParaTTS.Enqueue((textoBruto, emocionDetectada));
+
                     return textoBruto;
                 }
                 catch (Exception ex)

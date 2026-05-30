@@ -68,6 +68,20 @@ public class CaseGenerator : MonoBehaviour
             ? "3. SECRETO: Prueba irrefutable (ej. un objeto oculto, arma, recibo) que demuestra su culpabilidad y destroza su coartada. Tiene que tener mucha 'chicha' e intriga, y estar 100% relacionado con el crimen." 
             : "3. SECRETO: Actividad humillante, vergonzosa o un delito menor. Estaba en la escena ocultando este secreto con mucha 'chicha' (por eso mintió en su coartada), pero NO cometió el crimen principal. Debe estar 100% relacionado con el contexto del caso.";
 
+        string[] ejemplosActitud = new string[] 
+        {
+            "A la defensiva y chulo",
+            "Aterrado y tembloroso",
+            "Sereno y calculador",
+            "Nervioso pero intentando parecer calmado",
+            "Indiferente y aburrido",
+            "Agresivo y a la defensiva",
+            "Lloroso y desesperado",
+            "Desafiante y sarcástico",
+            "Sudando y tartamudeando"
+        };
+        string actitudAleatoria = ejemplosActitud[Random.Range(0, ejemplosActitud.Length)];
+
         string prompt = $@"Crea un detallado expediente de detectives [ID: {System.Guid.NewGuid()}].
 SOSPECHOSO: {estadoCulpa}. TEMA: ""{temaEscogido}""
 
@@ -76,7 +90,7 @@ REGLAS NARRATIVAS:
 2. COARTADA: Actividad falsa pero detallada cerca de la escena. DEBE estar 100% relacionada lógicamente con el entorno del caso.
 {reglaSecreto}
 4. HILO CONDUCTOR: Conecta el crimen, la coartada y el secreto usando un objeto específico, un testigo o un lugar muy concreto para darle realismo y cohesión.
-5. ACTITUD: 1 o 2 adjetivos máximo, MUY ESCUETO (ej: Tranquilo pero nervioso).
+5. ACTITUD: 1 o 2 adjetivos máximo, MUY ESCUETO. ¡INVENTA UNA DIFERENTE CADA VEZ! (ej: {actitudAleatoria}).
 6. FORMATO POLICIAL: TODO debe estar en TERCERA PERSONA (él). El sospechoso es un HOMBRE. Prohibido usar 'yo' o 'tú'.
 
 REGLA CRÍTICA DE FORMATO:
@@ -86,9 +100,8 @@ ES OBLIGATORIO usar formato XML. NO uses Markdown. NO escribas texto fuera del X
 <titulo>Título (máx 5 palabras)</titulo>
 <sospechoso>Nombre masculino completo inventado</sospechoso>
 <descripcion_folio>Resumen policial detallado del caso (1 párrafo largo)</descripcion_folio>
-<descripcion_prompt>Contexto rico para el interrogador (1 párrafo largo)</descripcion_prompt>
 <coartada>Su coartada detallada (1 párrafo largo)</coartada>
-<actitud>Adjetivos (ej: Tranquilo pero nervioso)</actitud>
+<actitud>Adjetivos inventados, 1 o 2 máximo(ej: {actitudAleatoria})</actitud>
 <secreto>El secreto real bien detallado (1 párrafo largo)</secreto>
 </caso>";
 

@@ -43,6 +43,11 @@ public class GameContext : MonoBehaviour
     public bool JuegoTerminado => juegoTerminado;
     public string PistasDescubiertas => pistasDescubiertas;
 
+    public void SetTiempoPartida(float tiempo)
+    {
+        tiempoPartida = tiempo;
+    }
+
     private void Awake()
     {
         if (Instance != null)

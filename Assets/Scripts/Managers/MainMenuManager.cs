@@ -24,6 +24,9 @@ public class MainMenuManager : MonoBehaviour
     [SerializeField] private TMP_InputField urlDialogoInput;
     [SerializeField] private TMP_InputField modeloDialogoInput;
     
+    [Header("UI Duración")]
+    [SerializeField] private TMP_Dropdown duracionDropdown;
+    
     [Header("UI Estado")]
     [SerializeField] private TextMeshProUGUI textoEstadoMenu; // Opcional, para mostrar "Generando caso en background..."
 
@@ -186,15 +189,17 @@ public class MainMenuManager : MonoBehaviour
 
     private void CargarPreferencias()
     {
-        if (ttsProviderDropdown != null) ttsProviderDropdown.value = PlayerPrefs.GetInt(PREF_PROVIDER, 0);
+        if (ttsProviderDropdown != null) ttsProviderDropdown.value = PlayerPrefs.GetInt(PREF_PROVIDER, (int)IAConfig.TTSProvider.EdgeTTS);
         if (apiKeyInput != null) apiKeyInput.text = PlayerPrefs.GetString(PREF_API_KEY, "");
         if (voiceIdInput != null) voiceIdInput.text = PlayerPrefs.GetString(PREF_VOICE_ID, "");
 
-        if (urlCasosInput != null) urlCasosInput.text = PlayerPrefs.GetString(PREF_URL_CASOS, "http://localhost:1234/v1/chat/completions");
-        if (modeloCasosInput != null) modeloCasosInput.text = PlayerPrefs.GetString(PREF_MOD_CASOS, "meta-llama-3.1-8b-instruct-abliterated");
+        if (urlCasosInput != null) urlCasosInput.text = PlayerPrefs.GetString(PREF_URL_CASOS, "http://localhost:11434/v1/chat/completions");
+        if (modeloCasosInput != null) modeloCasosInput.text = PlayerPrefs.GetString(PREF_MOD_CASOS, "llama3");
+
+        if (urlDialogoInput != null) urlDialogoInput.text = PlayerPrefs.GetString(PREF_URL_DIALOG, "http://localhost:11434/v1/chat/completions");
+        if (modeloDialogoInput != null) modeloDialogoInput.text = PlayerPrefs.GetString(PREF_MOD_DIALOG, "llama3");
         
-        if (urlDialogoInput != null) urlDialogoInput.text = PlayerPrefs.GetString(PREF_URL_DIALOG, "http://localhost:1234/v1/chat/completions");
-        if (modeloDialogoInput != null) modeloDialogoInput.text = PlayerPrefs.GetString(PREF_MOD_DIALOG, "meta-llama-3.1-8b-instruct-abliterated");
+        if (duracionDropdown != null) duracionDropdown.value = PlayerPrefs.GetInt("DuracionInterrogatorio", 1); // 1 = 5 minutos por defecto
     }
 
     private void GuardarPreferencias()
@@ -208,6 +213,7 @@ public class MainMenuManager : MonoBehaviour
         
         if (urlDialogoInput != null) PlayerPrefs.SetString(PREF_URL_DIALOG, urlDialogoInput.text);
         if (modeloDialogoInput != null) PlayerPrefs.SetString(PREF_MOD_DIALOG, modeloDialogoInput.text);
+        if (duracionDropdown != null) PlayerPrefs.SetInt("DuracionInterrogatorio", duracionDropdown.value);
             
         PlayerPrefs.Save();
     }
@@ -270,6 +276,20 @@ public class MainMenuManager : MonoBehaviour
         
         // 2. Dar un pequeño respiro al hilo principal
         await Task.Delay(200);
+
+        // 3. Aplicar duración al GameContext
+        if (duracionDropdown != null)
+        {
+            float tiempoElegido = 300f; // 5 min default
+            switch (duracionDropdown.value)
+            {
+                case 0: tiempoElegido = 180f; break; // 3 min
+                case 1: tiempoElegido = 300f; break; // 5 min
+                case 2: tiempoElegido = 600f; break; // 10 min
+                case 3: tiempoElegido = 900f; break; // 15 min
+            }
+            GameContext.Instance.SetTiempoPartida(tiempoElegido);
+        }
 
         // BUSCAMOS SI ESTAMOS EN UNA ARQUITECTURA DE ESCENA ÚNICA
         InterrogationManager interrogation = FindAnyObjectByType<InterrogationManager>(FindObjectsInactive.Include);

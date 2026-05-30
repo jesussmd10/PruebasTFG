@@ -25,7 +25,7 @@ public class AudioManager : MonoBehaviour
     }
 
     // Colas para la reproducción secuencial y pre-descarga paralela
-    private readonly Queue<string> colaFrases = new Queue<string>();
+    private readonly Queue<ClipDeAudioListo> colaFrases = new Queue<ClipDeAudioListo>();
     private readonly Queue<ClipDeAudioListo> colaClipsListos = new Queue<ClipDeAudioListo>();
     
     private bool reproduciendoCola = false;
@@ -89,14 +89,16 @@ public class AudioManager : MonoBehaviour
     /// Encola una frase para reproducción. Se usa desde el streaming.
     /// Inicia la descarga en segundo plano y la reproducción si no están activas.
     /// </summary>
-    public void EncolarFrase(string frase)
+    public void EncolarFrase(string frase, EmotionState emocion)
     {
         if (string.IsNullOrWhiteSpace(frase)) return;
 
-        colaFrases.Enqueue(frase);
-        UnityEngine.Debug.Log($"[AudioQueue] Encolada frase: '{frase}' (Frases en cola: {colaFrases.Count})");
-
-        // Iniciar la descarga en segundo plano si no está activa
+        // Guardar la frase y su emoción asociada para procesarla en el orden correcto
+        colaFrases.Enqueue(new ClipDeAudioListo 
+        { 
+            fraseOriginal = frase, 
+            emocion = emocion 
+        });// Iniciar la descarga en segundo plano si no está activa
         if (!generandoEnFondo)
         {
             StartCoroutine(PreDescargarClipsLoop());
@@ -112,9 +114,9 @@ public class AudioManager : MonoBehaviour
     /// <summary>
     /// Método clásico para reproducir un texto completo de una vez (no streaming).
     /// </summary>
-    public void ReproducirTexto(string texto)
+    public void ReproducirTexto(string texto, EmotionState emocion = EmotionState.Calmado)
     {
-        EncolarFrase(texto);
+        EncolarFrase(texto, emocion);
     }
 
     /// <summary>
@@ -127,10 +129,9 @@ public class AudioManager : MonoBehaviour
 
         while (colaFrases.Count > 0)
         {
-            string fraseOriginal = colaFrases.Dequeue();
-
-            // 1. Detectar emoción de esta frase específica
-            EmotionState emocion = DetectarEmocionEnTexto(fraseOriginal);
+            ClipDeAudioListo frasePreparada = colaFrases.Dequeue();
+            string fraseOriginal = frasePreparada.fraseOriginal;
+            EmotionState emocion = frasePreparada.emocion;
 
             // 2. Limpiar texto para TTS
             string fraseLimpia = NPCBehavior.LimpiarTexto(fraseOriginal);
@@ -567,72 +568,7 @@ public class AudioManager : MonoBehaviour
         }
     }
 
-    // =====================================================
-    //  DETECCIÓN DE EMOCIONES
-    // =====================================================
-
-    private EmotionState DetectarEmocionEnTexto(string texto)
-    {
-        EmotionState emocion = EmotionState.Hablando;
-
-        // Reparar paréntesis/corchetes/asteriscos huérfanos al inicio (si hay un cierre antes de una apertura)
-        int idxCierreP = texto.IndexOf(')');
-        int idxAperturaP = texto.IndexOf('(');
-        if (idxCierreP >= 0 && (idxAperturaP < 0 || idxAperturaP > idxCierreP))
-        {
-            texto = "(" + texto;
-        }
-
-        int idxCierreC = texto.IndexOf(']');
-        int idxAperturaC = texto.IndexOf('[');
-        if (idxCierreC >= 0 && (idxAperturaC < 0 || idxAperturaC > idxCierreC))
-        {
-            texto = "[" + texto;
-        }
-
-        var matches = Regex.Matches(texto, @"\((.*?)\)|\[(.*?)\]|\*(.*?)\*", RegexOptions.Singleline);
-        foreach (Match match in matches)
-        {
-            string accion = "";
-            if (match.Groups[1].Success) accion = match.Groups[1].Value;
-            else if (match.Groups[2].Success) accion = match.Groups[2].Value;
-            else if (match.Groups[3].Success) accion = match.Groups[3].Value;
-
-            string accionLow = accion.ToLower();
-
-            if (accionLow.Contains("tiembla") || accionLow.Contains("miedo") || 
-                accionLow.Contains("nervioso") || accionLow.Contains("asusta") || 
-                accionLow.Contains("tartamudea") || accionLow.Contains("suda") ||
-                accionLow.Contains("tensa") || accionLow.Contains("agita") ||
-                accionLow.Contains("furioso") || accionLow.Contains("agresivo") ||
-                accionLow.Contains("altera") || accionLow.Contains("pánico") ||
-                accionLow.Contains("duda") || accionLow.Contains("enfada") ||
-                accionLow.Contains("llora") || accionLow.Contains("desespera"))
-            {
-                return EmotionState.Nervioso;
-            }
-            else if (accionLow.Contains("niega") || 
-                     accionLow.Contains("cabeza") || accionLow.Contains("rechaza"))
-            {
-                return EmotionState.Negando;
-            }
-            else if (accionLow.Contains("calma") || accionLow.Contains("respira") || 
-                     accionLow.Contains("tranquil") || accionLow.Contains("suspira") ||
-                     accionLow.Contains("relaja"))
-            {
-                return EmotionState.Calmado;
-            }
-        }
-
-        string tx = texto.ToLower();
-        if (tx.Contains("no, no") || tx.Contains("eso no es verdad") || 
-            tx.Contains("es mentira") || tx.Contains("falso") || 
-            tx.Contains("montaje") || tx.Contains("injusto") || 
-            tx.Contains("jamás") || tx.Contains("me niego"))
-        {
-            return EmotionState.Negando;
-        }
-
-        return emocion;
-    }
+    // El método DetectarEmocionEnTexto ha sido eliminado. 
+    // Ahora la emoción se detecta en vivo desde el streaming XML del LLM en DialogueSystem.cs 
+    // y se pasa directamente al EncolarFrase.
 }
