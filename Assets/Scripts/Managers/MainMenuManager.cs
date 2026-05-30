@@ -117,7 +117,7 @@ public class MainMenuManager : MonoBehaviour
             }
             
             if (textoEstadoMenu != null) 
-                textoEstadoMenu.text = casoPreGenerado != null ? "¡Sistemas listos! Pulsa Jugar." : "Error al precargar. Se generará al jugar.";
+                textoEstadoMenu.text = casoPreGenerado != null ? "¡Sistemas listos!" : "Error al precargar. Se generará al jugar.";
 
             // Iniciar la precarga en segundo plano de la escena del juego (VR)
             PrecargarEscenaJuegoBackground();

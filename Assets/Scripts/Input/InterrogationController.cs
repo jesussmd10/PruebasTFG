@@ -15,6 +15,9 @@ public class InterrogationController : MonoBehaviour
     [Tooltip("Umbral de volumen (RMS) para considerar que se está gritando. En gafas VR, la voz suele ser más baja, un valor entre 0.05 y 0.15 suele funcionar bien.")]
     [SerializeField] private float umbralGrito = 0.08f;
 
+    [Tooltip("Si el volumen es muy bajo, súbelo para amplificar la voz matemáticamente (ej. 2 o 3)")]
+    [SerializeField] private float multiplicadorGanancia = 1f;
+
     [Header("Detección de Silencio")]
     [Range(0.0001f, 0.1f)]
     [Tooltip("Si hablas y no te pilla, bájalo. Si Whisper se inventa subtítulos cuando no hablas, súbelo.")]
@@ -262,12 +265,29 @@ public class InterrogationController : MonoBehaviour
 
     private float CalcularVolumenRMS(float[] muestras)
     {
-        float suma = 0;
-        foreach (float muestra in muestras)
+        // Dividimos el audio en "ventanas" de 250ms (cuarto de segundo a 16000Hz)
+        // Esto evita que un grito corto al final se diluya si has hablado normal durante 10 segundos antes.
+        int tamanoVentana = 16000 / 4; 
+        float maxRms = 0f;
+
+        for (int i = 0; i < muestras.Length; i += tamanoVentana)
         {
-            suma += muestra * muestra;
+            float suma = 0;
+            int contador = 0;
+            
+            for (int j = i; j < i + tamanoVentana && j < muestras.Length; j++)
+            {
+                suma += muestras[j] * muestras[j];
+                contador++;
+            }
+
+            if (contador > 0)
+            {
+                float rmsActual = Mathf.Sqrt(suma / contador);
+                if (rmsActual > maxRms) maxRms = rmsActual;
+            }
         }
 
-        return Mathf.Sqrt(suma / muestras.Length);
+        return maxRms * multiplicadorGanancia; // Devolvemos el "pico" de volumen con la ganancia extra
     }
 }

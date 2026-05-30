@@ -65,44 +65,37 @@ public class CaseGenerator : MonoBehaviour
         string temaEscogido = temasAleatorios[Random.Range(0, temasAleatorios.Length)];
 
         string reglaSecreto = esCulpable 
-            ? "3. EL SECRETO CRIMINAL: Como el sospechoso es CULPABLE, el secreto DEBE ser una PRUEBA FÍSICA o DATO IRREFUTABLE (ej: manchas de sangre, el arma homicida oculta, un mensaje incriminatorio) que demuestre SIN DUDA que cometió el crimen y destruya su coartada." 
-            : "3. EL SECRETO VERGONZOSO: Como el sospechoso es INOCENTE, el secreto debe ser algo HUMILLANTE, ILEGAL MENOR o VERGONZOSO. El sospechoso ESTABA EXACTAMENTE EN LA ESCENA o muy cerca, pero haciendo esa cosa vergonzosa. Eso explica por qué mintió en su coartada para ocultarse, pero NO cometió el crimen principal.";
+            ? "3. SECRETO: Prueba irrefutable (ej. un objeto oculto, arma, recibo) que demuestra su culpabilidad y destroza su coartada. Tiene que tener mucha 'chicha' e intriga, y estar 100% relacionado con el crimen." 
+            : "3. SECRETO: Actividad humillante, vergonzosa o un delito menor. Estaba en la escena ocultando este secreto con mucha 'chicha' (por eso mintió en su coartada), pero NO cometió el crimen principal. Debe estar 100% relacionado con el contexto del caso.";
 
-        string prompt = $@"Eres el guionista de un videojuego de detectives.
-Tu tarea es INVENTAR un caso TOTALMENTE NUEVO Y ÚNICO cada vez, sin copiarte de los ejemplos.
+        string prompt = $@"Crea un detallado expediente de detectives [ID: {System.Guid.NewGuid()}].
+SOSPECHOSO: {estadoCulpa}. TEMA: ""{temaEscogido}""
 
-TEMA OBLIGATORIO PARA ESTE CASO: ""{temaEscogido}""
-Crea el crimen, la coartada y el secreto basándote ESTRICTAMENTE en este tema, pero aportando tus propios detalles creativos.
-
-INSTRUCCIONES CLAVE (ID Generación: {System.Guid.NewGuid()}):
-¡EL SOSPECHOSO DEL CASO ES {estadoCulpa}!
-
-REGLAS DE COHESIÓN (TODO DEBE ESTAR PERFECTAMENTE HILADO):
-1. EL CRIMEN: El delito concreto por el que se le interroga (relacionado con el TEMA OBLIGATORIO).
-2. LA COARTADA: El sospechoso afirma que estaba haciendo una actividad aparentemente normal CERCA del lugar del crimen a la misma hora. La coartada DEBE estar relacionada lógicamente con el entorno del crimen.
+REGLAS NARRATIVAS:
+1. CRIMEN: Delito original y muy descriptivo basado en el TEMA.
+2. COARTADA: Actividad falsa pero detallada cerca de la escena. DEBE estar 100% relacionada lógicamente con el entorno del caso.
 {reglaSecreto}
-4. ACTITUD: Usa solo 1 o 2 adjetivos (ej: Nervioso, Sarcástico, Llorón, Prepotente).
-5. FORMATO POLICIAL: Redacta TODOS los campos de forma neutral, en tercera persona. NUNCA uses ""Tú"" o ""Yo"".
-6. CREATIVIDAD Y DETALLE: Sé creativo y detalla bien la escena, la coartada y el secreto. Escribe párrafos ricos e interesantes. NO añadas introducciones ni saludos fuera de la plantilla. Genera ÚNICAMENTE la plantilla rellenada.
+4. HILO CONDUCTOR: Conecta el crimen, la coartada y el secreto usando un objeto específico, un testigo o un lugar muy concreto para darle realismo y cohesión.
+5. ACTITUD: 1 o 2 adjetivos máximo, MUY ESCUETO (ej: Tranquilo pero nervioso).
+6. FORMATO POLICIAL: TODO debe estar en TERCERA PERSONA (él). El sospechoso es un HOMBRE. Prohibido usar 'yo' o 'tú'.
+7. CREATIVIDAD: Escribe párrafos ricos e interesantes. SÓLO genera el XML.
 
-IMPORTANTE: NO COPIES LAS INSTRUCCIONES. DEBES GENERAR LA PLANTILLA USANDO ETIQUETAS XML EXACTAS PARA CADA CAMPO. SUSTITUYE EL TEXTO ENTRE LAS ETIQUETAS POR TU HISTORIA:
-
-<titulo>Tu título aquí, máximo 5 palabras</titulo>
-<sospechoso>Nombre y Apellidos del sospechoso inventado</sospechoso>
-<descripcion_folio>Tu resumen policial aquí, 1 párrafo corto</descripcion_folio>
-<descripcion_prompt>Tu descripción para el interrogatorio aquí, 1 párrafo corto</descripcion_prompt>
-<coartada>Tu coartada aquí, 1 párrafo corto</coartada>
-<actitud>Tus adjetivos simples aquí, ej: Tranquilo pero alterado</actitud>
-<secreto>Tu secreto revelador aquí, 1 párrafo corto</secreto>
-";
+PLANTILLA:
+<titulo>Título (máx 5 palabras)</titulo>
+<sospechoso>Nombre masculino completo inventado</sospechoso>
+<descripcion_folio>Resumen policial detallado del caso (1 párrafo largo)</descripcion_folio>
+<descripcion_prompt>Contexto rico para el interrogador (1 párrafo largo)</descripcion_prompt>
+<coartada>Su coartada detallada (1 párrafo largo)</coartada>
+<actitud>Adjetivos (ej: Tranquilo pero nervioso)</actitud>
+<secreto>El secreto real bien detallado (1 párrafo largo)</secreto>";
 
         if (inteligencia == NivelInteligencia.Simple)
         {
-            prompt += "\n(MANTÉN EL VOCABULARIO SENCILLO Y DIRECTO. VE DIRECTO AL GRANO.)\n";
+            prompt += "\n(VOCABULARIO SIMPLE Y DIRECTO.)\n";
         }
         else if (inteligencia == NivelInteligencia.Complejo)
         {
-            prompt += "\n(PUEDES USAR UNA TRAMA MÁS REBUSCADA O CREATIVA, PERO MANTENIENDO SIEMPRE LA COHESIÓN LÓGICA ENTRE COARTADA Y SECRETO.)\n";
+            prompt += "\n(TRAMA CREATIVA Y REBUSCADA, MANTENIENDO COHESIÓN LÓGICA.)\n";
         }
 
         return prompt;
