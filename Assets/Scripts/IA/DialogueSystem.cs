@@ -74,6 +74,11 @@ public class DialogueSystem : MonoBehaviour
             
             // Limpiar tartamudeos con guión que el TTS lee mal (ej: "N-no" -> "no", "P-pero" -> "pero")
             frase = System.Text.RegularExpressions.Regex.Replace(frase, @"(?i)\b[a-zñáéíóú]-", "");
+            
+            // Eliminar cualquier metadato entre corchetes o paréntesis para que el TTS jamás lo lea en voz alta
+            frase = System.Text.RegularExpressions.Regex.Replace(frase, @"\[.*?\]", "").Trim();
+            frase = System.Text.RegularExpressions.Regex.Replace(frase, @"\(.*?\)", "").Trim();
+            
             EventSystem.OnFraseListaParaTTS.Invoke(frase, emocion);
         }
     }
@@ -260,6 +265,7 @@ Debido a tu inteligencia, debes tener MUCHO CUIDADO con la gramática en españo
 [SISTEMA DE ANIMACIONES Y METADATOS - ¡OBLIGATORIO AL FINAL!]
 ESTÁ ESTRICTAMENTE PROHIBIDO USAR ASTERISCOS (**) EN TU RESPUESTA. No narres acciones corporales. Sólo habla.
 En su lugar, usarás un sistema de corchetes al FINAL EXACTO de tu texto.
+ESTÁ ESTRICTAMENTE PROHIBIDO inventarte otros corchetes (ej: [pausa corta], [suspira], [llora]). SÓLO puedes usar los permitidos.
 
 REGLAS PARA ANIMACIONES:
 Al final de tu respuesta (y antes de la pista si la hay), DEBES añadir tu estado de animación usando UNO de estos 3 corchetes:
@@ -386,7 +392,7 @@ Regla de oro: Escribe la descripción de la pista en TERCERA PERSONA, de forma n
         {
             string animText = matchAnim.Groups[1].Value.Trim().ToUpper();
             if (animText.Contains("NERVIOSO")) emocionValida = "[ANIMACION: NERVIOSO]";
-            else if (animText.Contains("NEGACION")) emocionValida = "[ANIMACION: NEGACION]";
+            else if (animText.Contains("NEGACION") || animText.Contains("NEGACIÓN")) emocionValida = "[ANIMACION: NEGACION]";
         }
 
         // Borrar todos los corchetes de animación de la frase para reconstruirla limpia al final
@@ -479,7 +485,7 @@ Regla de oro: Escribe la descripción de la pista en TERCERA PERSONA, de forma n
                                     {
                                         string animText = matchAnim.Groups[1].Value.Trim().ToUpper();
                                         if (animText.Contains("NERVIOSO")) emocionActual = EmotionState.Nervioso;
-                                        else if (animText.Contains("NEGACION")) emocionActual = EmotionState.Negando;
+                                        else if (animText.Contains("NEGACION") || animText.Contains("NEGACIÓN")) emocionActual = EmotionState.Negando;
                                         else emocionActual = EmotionState.Calmado;
                                         
                                         animacionProcesada = true;
@@ -569,7 +575,7 @@ Regla de oro: Escribe la descripción de la pista en TERCERA PERSONA, de forma n
                     {
                         string animText = matchAnim.Groups[1].Value.Trim().ToUpper();
                         if (animText.Contains("NERVIOSO")) emocionDetectada = EmotionState.Nervioso;
-                        else if (animText.Contains("NEGACION")) emocionDetectada = EmotionState.Negando;
+                        else if (animText.Contains("NEGACION") || animText.Contains("NEGACIÓN")) emocionDetectada = EmotionState.Negando;
                     }
 
                     // Encolar texto bruto, se limpiará en TTS

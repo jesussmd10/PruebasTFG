@@ -16,15 +16,15 @@ MonoBehaviour:
   nombreModeloCasos: llama-3.2-3b-instruct-abliterated
   temperaturaCasos: 0.8
   urlModeloDialogo: http://localhost:1234/v1/chat/completions
-  nombreModeloDialogo: meta-llama-3.1-8b-instruct-abliterated
+  nombreModeloDialogo: llama-3.2-3b-instruct-abliterated
   temperaturaDialogo: 0.7
   usarStreaming: 0
   maxTokensRespuesta: 150
   maxTokensCaso: 512
   maxMensajesHistorial: 10
-  ttsProvider: 0
-  ttsApiKey: 0f4d01eb7b2cf29c590a32b6d4f031b721f684b194a5ca0f39131cece6270072
-  ttsVoiceId: pNInz6obpgDQGcFmaJgB
+  ttsProvider: 2
+  ttsApiKey: 25b772cc740fed7b8e7fd0b431420c5ca54dd7963ff4bfce7d9ad97397f5d464
+  ttsVoiceId: ErXwobaYiN019PkySvjV
   promptCulpable: Eres Alex, un sospechoso CULPABLE. Debes mentir e inventar excusas.
   promptInocente: Eres Alex, un sospechoso INOCENTE. Defiende tu inocencia.
   tagPista: '[PISTA]'

@@ -25,6 +25,7 @@ public class InterrogationController : MonoBehaviour
 
     private int posicionInicio;
     private AudioClip clipGrabado;
+    public AudioClip ClipGrabado => clipGrabado; // Expuesto para que MicLevelVisualizer pueda leerlo sin robar el micro
     private string microfonoActual;
     private bool grabando = false;
 
@@ -180,6 +181,14 @@ public class InterrogationController : MonoBehaviour
     private void ComenzarGrabacion(InputAction.CallbackContext context)
     {
         if (grabando) return;
+        
+        // --- FIX: Si algún otro script (como el Menú) apagó el micrófono, lo reiniciamos aquí ---
+        if (!string.IsNullOrEmpty(microfonoActual) && !Microphone.IsRecording(microfonoActual))
+        {
+            Debug.LogWarning("El micrófono estaba apagado. Reiniciando grabación para Whisper...");
+            IniciarGrabacion();
+        }
+
         grabando = true;
         posicionInicio = Microphone.GetPosition(microfonoActual);
         Debug.Log("Grabando...");

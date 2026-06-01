@@ -28,6 +28,22 @@ public class MicLevelVisualizer : MonoBehaviour
     private float maxRmsConsole = 0f;
     private float consoleTimer = 0f;
 
+    // Palabras clave de micrófonos de gafas VR conocidos
+    private readonly string[] palabrasClaveVR = new string[]
+    {
+        "Quest",           // Meta Quest 2 / 3 / Pro
+        "Oculus",          // Oculus Rift / Rift S
+        "Headset Microphone", // Genérico VR
+        "Microphone Array", // Quest Link
+        "HMD Mic",         // Algunos HMD
+        "Vive",            // HTC Vive
+        "Pico",            // Pico Neo / Pico 4
+        "Index",           // Valve Index
+        "WMR",             // Windows Mixed Reality
+    };
+
+    private bool yoInicieElMicro = false;
+
     private void Start()
     {
         if (barraVolumen != null)
@@ -39,9 +55,51 @@ public class MicLevelVisualizer : MonoBehaviour
 
         if (Microphone.devices.Length > 0)
         {
-            microfonoActual = Microphone.devices[0];
-            clipMicrofono = Microphone.Start(microfonoActual, true, 999, 16000);
+            microfonoActual = BuscarMicrofonoVR();
+            if (string.IsNullOrEmpty(microfonoActual))
+            {
+                microfonoActual = Microphone.devices[0]; // Fallback
+            }
+            
+            if (!Microphone.IsRecording(microfonoActual))
+            {
+                clipMicrofono = Microphone.Start(microfonoActual, true, 999, 16000);
+                yoInicieElMicro = true;
+            }
+            else
+            {
+                // El micrófono ya está siendo usado por otro script.
+                // Si usamos Microphone.Start() ahora, le ROBAREMOS los datos de audio a ese script (clip vacío).
+                InterrogationController ic = Object.FindAnyObjectByType<InterrogationController>();
+                if (ic != null && ic.ClipGrabado != null)
+                {
+                    // ¡Encontramos el controlador principal! Usamos su clip de audio.
+                    clipMicrofono = ic.ClipGrabado;
+                    yoInicieElMicro = false;
+                }
+                else
+                {
+                    // Si no hay controlador, no nos queda otra que reiniciar.
+                    clipMicrofono = Microphone.Start(microfonoActual, true, 999, 16000);
+                    yoInicieElMicro = false;
+                }
+            }
         }
+    }
+
+    private string BuscarMicrofonoVR()
+    {
+        foreach (var device in Microphone.devices)
+        {
+            foreach (var palabraClave in palabrasClaveVR)
+            {
+                if (device.IndexOf(palabraClave, System.StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    return device;
+                }
+            }
+        }
+        return null;
     }
 
     private void Update()
@@ -127,10 +185,12 @@ public class MicLevelVisualizer : MonoBehaviour
 
     private void OnDisable()
     {
-        // Al cerrar el menú, apagamos el micro para que el juego pueda usarlo luego
-        if (Microphone.IsRecording(microfonoActual))
+        // Al cerrar el menú, SOLO apagamos el micro si fuimos nosotros los que lo iniciamos.
+        // Si el juego (InterrogationController) ya lo estaba usando, no se lo cortamos.
+        if (yoInicieElMicro && !string.IsNullOrEmpty(microfonoActual) && Microphone.IsRecording(microfonoActual))
         {
             Microphone.End(microfonoActual);
+            yoInicieElMicro = false;
         }
     }
 }
