@@ -41,9 +41,10 @@ public class CharacterAnimator : MonoBehaviour
                     // Solo forzamos el crossfade a Quieto si estábamos hablando.
                     // Si estamos al principio del juego (llegando a la mesa), queremos
                     // respetar la animación base/nerviosa por defecto en lugar de cortarla.
-                    if (animador.GetCurrentAnimatorStateInfo(1).IsName("TALK"))
+                    if (estadoActual == EmotionState.Hablando)
                     {
-                        animador.CrossFade("Quieto", 0.25f, 1);
+                        // Transición suave de 0.25s a la animación base de la capa 1
+                        animador.CrossFade("Quieto", 0.1f, 1);
                     }
                     animador.SetTrigger("IDLE"); // Mantenemos el trigger por si otras capas lo necesitan
                     break;

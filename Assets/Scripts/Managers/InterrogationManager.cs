@@ -406,7 +406,7 @@ public class InterrogationManager : MonoBehaviour
                          $"<size=110%><b>{caso.TituloFolio}</b></size>\n" +
                          $"<size=90%><i>{caso.DescripcionFolio}</i>\n\n" +
                          $"- <b>Actitud:</b> {caso.Actitud}\n" +
-                         $"- <b>Coartada falsa:</b> {caso.Coartada}\n" +
+                         $"- <b>Coartada:</b> {caso.Coartada}\n" +
                          $"- <b>Secreto {(eraCulpable ? "Criminal" : "Inocente")}:</b> {caso.Secreto}\n\n" +
                          $"{estadoSiguienteCaso}</size></align>";
 

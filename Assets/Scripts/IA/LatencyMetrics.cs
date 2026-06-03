@@ -12,11 +12,12 @@ public class LatencyMetrics : MonoBehaviour
 {
     public static LatencyMetrics Instance { get; private set; }
 
-    private string rutaCSV;
+    private string rutaCSV_Dialogo;
+    private string rutaCSV_Caso;
     private readonly List<MetricaRespuesta> sesionActual = new List<MetricaRespuesta>();
 
     // Datos de la medición en curso
-    private float tiempoInicio;
+    private System.Diagnostics.Stopwatch stopwatch;
     private float tiempoPrimerToken;
     private bool primerTokenRecibido;
     private int tokensContados;
@@ -42,17 +43,23 @@ public class LatencyMetrics : MonoBehaviour
         if (Instance != null) { Destroy(gameObject); return; }
         Instance = this;
 
-        rutaCSV = Path.Combine(Application.persistentDataPath, "metricas_llm.csv");
+        rutaCSV_Dialogo = Path.Combine(Application.persistentDataPath, "metricas_llm_dialogo.csv");
+        rutaCSV_Caso = Path.Combine(Application.persistentDataPath, "metricas_llm_caso.csv");
+
+        string cabecera = "timestamp;modelo;tipo;primerToken_ms;tiempoTotal_ms;totalTokens;tokens_seg;longitudRespuesta;tienePista\n";
 
         // Crear CSV con cabeceras si no existe
-        if (!File.Exists(rutaCSV))
+        if (!File.Exists(rutaCSV_Dialogo))
         {
-            File.WriteAllText(rutaCSV,
-                "timestamp,modelo,tipo,primerToken_ms,tiempoTotal_ms,totalTokens,tokens_seg,longitudRespuesta,tienePista\n",
-                Encoding.UTF8);
+            File.WriteAllText(rutaCSV_Dialogo, cabecera, Encoding.UTF8);
+        }
+        
+        if (!File.Exists(rutaCSV_Caso))
+        {
+            File.WriteAllText(rutaCSV_Caso, cabecera, Encoding.UTF8);
         }
 
-        Debug.Log($"[Métricas] CSV en: {rutaCSV}");
+        Debug.Log($"[Métricas] CSVs en: {Application.persistentDataPath}");
     }
 
     /// <summary>
@@ -62,7 +69,10 @@ public class LatencyMetrics : MonoBehaviour
     {
         modeloActual = nombreModelo;
         tipoActual = tipo;
-        tiempoInicio = Time.realtimeSinceStartup;
+        
+        if (stopwatch == null) stopwatch = new System.Diagnostics.Stopwatch();
+        stopwatch.Restart();
+        
         tiempoPrimerToken = 0f;
         primerTokenRecibido = false;
         tokensContados = 0;
@@ -77,7 +87,7 @@ public class LatencyMetrics : MonoBehaviour
         if (!primerTokenRecibido)
         {
             primerTokenRecibido = true;
-            tiempoPrimerToken = (Time.realtimeSinceStartup - tiempoInicio) * 1000f;
+            if (stopwatch != null) tiempoPrimerToken = (float)stopwatch.Elapsed.TotalMilliseconds;
         }
     }
 
@@ -86,7 +96,8 @@ public class LatencyMetrics : MonoBehaviour
     /// </summary>
     public void FinalizarMedicion(string respuestaCompleta, bool tienePista, int exactTokens = -1)
     {
-        float tiempoTotal = (Time.realtimeSinceStartup - tiempoInicio) * 1000f;
+        if (stopwatch != null) stopwatch.Stop();
+        float tiempoTotal = stopwatch != null ? (float)stopwatch.Elapsed.TotalMilliseconds : 0f;
 
         // Si no hubo streaming (respuesta de golpe), primer token = tiempo total
         if (!primerTokenRecibido)
@@ -134,8 +145,9 @@ public class LatencyMetrics : MonoBehaviour
     {
         try
         {
-            string linea = $"{m.timestamp},{m.modelo},{m.tipo},{m.tiempoPrimerToken_ms:F0},{m.tiempoTotal_ms:F0},{m.totalTokens},{m.tokensPerSeg:F1},{m.longitudRespuesta},{m.tienePista}\n";
-            File.AppendAllText(rutaCSV, linea, Encoding.UTF8);
+            string ruta = m.tipo.ToLower() == "caso" ? rutaCSV_Caso : rutaCSV_Dialogo;
+            string linea = $"{m.timestamp};{m.modelo};{m.tipo};{m.tiempoPrimerToken_ms:F0};{m.tiempoTotal_ms:F0};{m.totalTokens};{m.tokensPerSeg:F1};{m.longitudRespuesta};{m.tienePista}\n";
+            File.AppendAllText(ruta, linea, Encoding.UTF8);
         }
         catch (Exception ex)
         {
@@ -153,13 +165,14 @@ public class LatencyMetrics : MonoBehaviour
         var sb = new StringBuilder();
         sb.AppendLine("=== RESUMEN SESIÓN ===");
 
-        // Agrupar por modelo
+        // Agrupar por modelo y tipo
         var porModelo = new Dictionary<string, List<MetricaRespuesta>>();
         foreach (var m in sesionActual)
         {
-            if (!porModelo.ContainsKey(m.modelo))
-                porModelo[m.modelo] = new List<MetricaRespuesta>();
-            porModelo[m.modelo].Add(m);
+            string clave = $"{m.modelo} ({m.tipo})";
+            if (!porModelo.ContainsKey(clave))
+                porModelo[clave] = new List<MetricaRespuesta>();
+            porModelo[clave].Add(m);
         }
 
         foreach (var kvp in porModelo)

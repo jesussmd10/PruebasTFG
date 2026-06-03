@@ -38,9 +38,9 @@ public class InterrogationController : MonoBehaviour
         if (whisper != null)
         {
             whisper.language = "es";
-            // Un prompt en formato de frase natural ayuda más a Whisper que palabras sueltas.
-            // Añadimos contexto coloquial y acento canario para que asocie las pronunciaciones omitidas (como "cuarta" por "coartada") con la jerga policial correcta.
-            whisper.initialPrompt = "Conversación y diálogo coloquial de un interrogatorio policial en España, con acento canario. Se usa vocabulario policial. Palabras clave importantes: coartada, crimen, asesinato, sospechoso, pruebas, culpable, inocente, detective, fiscal, cárcel, verdad, mentira, jurar, chacho.";
+            // Whisper usa initialPrompt como 'contexto previo' (como si alguien acabara de decir eso).
+            // Ya que tú eres el detective, el prompt debe estar escrito desde tu perspectiva interrogando.
+            whisper.initialPrompt = "Mira chacho, dime la verdad. Sé que cometiste el crimen, no tienes coartada y eres el principal sospechoso del asesinato. Tenemos pruebas de que eres culpable, así que deja de mentir. Si no confiesas, vas a ir directo al talego, ¿me entiendes? Venga, empieza a hablar.";
         }
     }
 

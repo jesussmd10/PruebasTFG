@@ -18,12 +18,12 @@ public class CaseGenerator : MonoBehaviour
 
     private static readonly GameContext.CasoDelito[] casosFallback = new GameContext.CasoDelito[]
     {
-        new GameContext.CasoDelito { ID = "042", TituloFolio = "ROBO EN EL MUSEO", Sospechoso = "Alex (Desconocido)", DescripcionFolio = "Robo de un diamante maldito durante una gala de disfraces.", DescripcionPrompt = "un atraco en el museo de arte moderno donde se robó un diamante maldito durante una gala", Coartada = "encerrado en el baño de un tailandés", Actitud = "Paranoico", EsCulpable = true, Secreto = "El diamante está en su zapato." },
-        new GameContext.CasoDelito { ID = "087", TituloFolio = "ENVENENAMIENTO", Sospechoso = "Alex (Desconocido)", DescripcionFolio = "Asesinato por envenenamiento con pudin en el asilo de ancianos.", DescripcionPrompt = "el envenenamiento de un millonario usando pudin de chocolate caducado en un asilo", Coartada = "haciendo espiritismo clandestino en el sótano", Actitud = "Sarcástico", EsCulpable = false, Secreto = "Invocaba el fantasma de su hámster." },
-        new GameContext.CasoDelito { ID = "104", TituloFolio = "SECUESTRO VIRTUAL", Sospechoso = "Alex (Desconocido)", DescripcionFolio = "Secuestro de un famoso Youtuber mientras emitía en directo.", DescripcionPrompt = "el secuestro de un youtuber famoso irrumpiendo en su mansión en pleno directo", Coartada = "grabando TikToks con cosplay de Batman", Actitud = "Pedante", EsCulpable = true, Secreto = "Perdió su móvil en la mansión." },
-        new GameContext.CasoDelito { ID = "019", TituloFolio = "SABOTAJE ANIMAL", Sospechoso = "Alex (Desconocido)", DescripcionFolio = "Liberación ilegal de pingüinos pigmeos en el puerto de la ciudad.", DescripcionPrompt = "haber liberado cien pingüinos pigmeos de un carguero en el puerto", Coartada = "persiguiendo ovnis en el bosque oscuro", Actitud = "Lloriqueando", EsCulpable = false, Secreto = "Robaba el WiFi del McDonald's." },
-        new GameContext.CasoDelito { ID = "055", TituloFolio = "AGRESIÓN FRIKI", Sospechoso = "Alex (Desconocido)", DescripcionFolio = "Agresión con sables láser de juguete en la convención de cómics.", DescripcionPrompt = "haber agredido violentamente al organizador de una convención de cómics usando réplicas de sables láser", Coartada = "en una cita con 'El Rey Lagarto'", Actitud = "Sabelotodo", EsCulpable = true, Secreto = "Rompió su sable en la cabeza de la víctima." },
-        new GameContext.CasoDelito { ID = "092", TituloFolio = "FALSIFICACIÓN", Sospechoso = "Alex (Desconocido)", DescripcionFolio = "Falsificación de obras de arte contemporáneo usando macarrones con queso.", DescripcionPrompt = "una estafa vendiendo cuadros falsos de Picasso hechos de macarrones con queso y pintura", Coartada = "robando WiFi desde mi maletero", Actitud = "Seductor", EsCulpable = false, Secreto = "Huía de un prestamista colombiano." }
+        new GameContext.CasoDelito { ID = "042", TituloFolio = "ROBO EN EL MUSEO", Sospechoso = "Alex", DescripcionFolio = "Robo de un diamante maldito durante una gala de disfraces.", DescripcionPrompt = "un atraco en el museo de arte moderno donde se robó un diamante maldito durante una gala", Coartada = "encerrado en el baño de un tailandés", Actitud = "Paranoico", EsCulpable = true, Secreto = "El diamante está en su zapato." },
+        new GameContext.CasoDelito { ID = "087", TituloFolio = "ENVENENAMIENTO", Sospechoso = "Alex", DescripcionFolio = "Asesinato por envenenamiento con pudin en el asilo de ancianos.", DescripcionPrompt = "el envenenamiento de un millonario usando pudin de chocolate caducado en un asilo", Coartada = "haciendo espiritismo clandestino en el sótano", Actitud = "Sarcástico", EsCulpable = false, Secreto = "Invocaba el fantasma de su hámster." },
+        new GameContext.CasoDelito { ID = "104", TituloFolio = "SECUESTRO VIRTUAL", Sospechoso = "Alex", DescripcionFolio = "Secuestro de un famoso Youtuber mientras emitía en directo.", DescripcionPrompt = "el secuestro de un youtuber famoso irrumpiendo en su mansión en pleno directo", Coartada = "grabando TikToks con cosplay de Batman", Actitud = "Pedante", EsCulpable = true, Secreto = "Perdió su móvil en la mansión." },
+        new GameContext.CasoDelito { ID = "019", TituloFolio = "SABOTAJE ANIMAL", Sospechoso = "Alex", DescripcionFolio = "Liberación ilegal de pingüinos pigmeos en el puerto de la ciudad.", DescripcionPrompt = "haber liberado cien pingüinos pigmeos de un carguero en el puerto", Coartada = "persiguiendo ovnis en el bosque oscuro", Actitud = "Lloriqueando", EsCulpable = false, Secreto = "Robaba el WiFi del McDonald's." },
+        new GameContext.CasoDelito { ID = "055", TituloFolio = "AGRESIÓN FRIKI", Sospechoso = "Alex", DescripcionFolio = "Agresión con sables láser de juguete en la convención de cómics.", DescripcionPrompt = "haber agredido violentamente al organizador de una convención de cómics usando réplicas de sables láser", Coartada = "en una cita con 'El Rey Lagarto'", Actitud = "Sabelotodo", EsCulpable = true, Secreto = "Rompió su sable en la cabeza de la víctima." },
+        new GameContext.CasoDelito { ID = "092", TituloFolio = "FALSIFICACIÓN", Sospechoso = "Alex", DescripcionFolio = "Falsificación de obras de arte contemporáneo usando macarrones con queso.", DescripcionPrompt = "una estafa vendiendo cuadros falsos de Picasso hechos de macarrones con queso y pintura", Coartada = "robando WiFi desde mi maletero", Actitud = "Seductor", EsCulpable = false, Secreto = "Huía de un prestamista colombiano." }
     };
 
     private enum NivelInteligencia { Simple, Medio, Complejo }
@@ -56,7 +56,22 @@ public class CaseGenerator : MonoBehaviour
         "un chantaje en redes sociales a un influencer muy creído",
         "un robo de criptomonedas o hackeo desde el sótano de los padres",
         "una pelea callejera con armas absurdas (ej. sables láser de plástico o sartenes)",
-        "un caso cotidiano de robo de paquetes en la puerta de las casas"
+        "un caso cotidiano de robo de paquetes en la puerta de las casas",
+        "un robo de un décimo de lotería premiado en el bar del barrio",
+        "un envenenamiento con laxantes en el termo de café del jefe de una oficina",
+        "una estafa con entradas VIP falsas para el concierto de un artista famoso",
+        "un sabotaje cortando los cables del router en medio de un torneo de eSports",
+        "un caso de suplantación de identidad en una aplicación de citas de lujo",
+        "un asalto a un furgón que transportaba cromos coleccionables extremadamente raros",
+        "una venganza destruyendo el vestido de novia horas antes de una boda de la alta sociedad",
+        "un robo de una reliquia histórica en un museo local muy polvoriento y olvidado",
+        "un secuestro express del cantante principal de una banda tributo muy mala",
+        "un incendio provocado en un gimnasio de barrio por culpa de unos esteroides adulterados",
+        "un atropello y fuga con un carrito de golf en un club de campo para ricos",
+        "un fraude en un concurso de talentos caninos de televisión local",
+        "un intento de extorsión usando fotos embarazosas de una despedida de soltero",
+        "un atraco a un banco donde los ladrones se quedaron encerrados en la cámara acorazada",
+        "un sabotaje en un festival de música independiente cortando la electricidad del escenario principal"
     };
 
     private static string ObtenerPromptDinamico(NivelInteligencia inteligencia, bool esCulpable)
@@ -78,7 +93,17 @@ public class CaseGenerator : MonoBehaviour
             "Agresivo y a la defensiva",
             "Lloroso y desesperado",
             "Desafiante y sarcástico",
-            "Sudando y tartamudeando"
+            "Sudando y tartamudeando", 
+            "Paranoico y suspicaz",
+            "Pedante y sabelotodo",
+            "Falsamente cooperativo",
+            "Indignado y ofendido",
+            "Despistado y confuso",
+            "Dramático y victimista",
+            "Hostil y gruñón",
+            "Críptico y misterioso",
+            "Agotado y apático",
+            "Burlón y bromista"
         };
         string actitudAleatoria = ejemplosActitud[Random.Range(0, ejemplosActitud.Length)];
 
@@ -107,7 +132,7 @@ ES OBLIGATORIO usar formato XML. NO uses Markdown. NO escribas texto fuera del X
 
         if (inteligencia == NivelInteligencia.Simple)
         {
-            prompt += "\n(VOCABULARIO SIMPLE Y DIRECTO.)\n";
+            prompt += "\n(VOCABULARIO SIMPLE Y DIRECTO,MANTENIENDO COHESIÓN LÓGICA.)\n";
         }
         else if (inteligencia == NivelInteligencia.Complejo)
         {
