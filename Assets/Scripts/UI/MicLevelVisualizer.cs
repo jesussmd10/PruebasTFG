@@ -44,8 +44,18 @@ public class MicLevelVisualizer : MonoBehaviour
 
     private bool yoInicieElMicro = false;
 
+    private void Awake()
+    {
+        // Guardar la calibración del Inspector para que el InterrogationController la use en la sala de juego
+        PlayerPrefs.SetFloat("UmbralGritoGuardado", umbralGrito);
+        PlayerPrefs.SetFloat("GananciaGuardada", multiplicadorGanancia);
+        PlayerPrefs.Save();
+        Debug.Log($"[Calibración] Umbral ({umbralGrito}) y Ganancia ({multiplicadorGanancia}) guardados para el juego.");
+    }
+
     private void Start()
     {
+
         if (barraVolumen != null)
         {
             barraVolumen.minValue = 0;

@@ -29,6 +29,17 @@ public class InterrogationController : MonoBehaviour
     private string microfonoActual;
     private bool grabando = false;
 
+    private void Awake()
+    {
+        // Cargar la calibración exacta que el usuario configuró en el Menú Principal (MicVisualizer)
+        if (PlayerPrefs.HasKey("UmbralGritoGuardado"))
+        {
+            umbralGrito = PlayerPrefs.GetFloat("UmbralGritoGuardado");
+            multiplicadorGanancia = PlayerPrefs.GetFloat("GananciaGuardada");
+            Debug.Log($"<color=green>[Calibración de Micrófono]</color> Aplicando ajustes del menú principal: Umbral={umbralGrito}, Ganancia={multiplicadorGanancia}");
+        }
+    }
+
     private void Start()
     {
         InicializarMicrófono();

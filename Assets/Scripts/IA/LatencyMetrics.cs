@@ -32,6 +32,7 @@ public class LatencyMetrics : MonoBehaviour
         public string tipo; // "dialogo" o "caso"
         public float tiempoPrimerToken_ms;
         public float tiempoTotal_ms;
+        public float tiempoTotal_seg; // <- Nueva columna para facilitar métricas
         public int totalTokens;
         public float tokensPerSeg;
         public int longitudRespuesta;
@@ -46,7 +47,7 @@ public class LatencyMetrics : MonoBehaviour
         rutaCSV_Dialogo = Path.Combine(Application.persistentDataPath, "metricas_llm_dialogo.csv");
         rutaCSV_Caso = Path.Combine(Application.persistentDataPath, "metricas_llm_caso.csv");
 
-        string cabecera = "timestamp;modelo;tipo;primerToken_ms;tiempoTotal_ms;totalTokens;tokens_seg;longitudRespuesta;tienePista\n";
+        string cabecera = "timestamp;modelo;tipo;primerToken_ms;tiempoTotal_ms;tiempoTotal_seg;totalTokens;tokens_seg;longitudRespuesta;tienePista\n";
 
         // Crear CSV con cabeceras si no existe
         if (!File.Exists(rutaCSV_Dialogo))
@@ -129,6 +130,7 @@ public class LatencyMetrics : MonoBehaviour
             tipo = tipoActual,
             tiempoPrimerToken_ms = tiempoPrimerToken,
             tiempoTotal_ms = tiempoTotal,
+            tiempoTotal_seg = tiempoTotal / 1000f,
             totalTokens = tokensContados,
             tokensPerSeg = tokensPerSeg,
             longitudRespuesta = respuestaCompleta.Length,
@@ -146,7 +148,7 @@ public class LatencyMetrics : MonoBehaviour
         try
         {
             string ruta = m.tipo.ToLower() == "caso" ? rutaCSV_Caso : rutaCSV_Dialogo;
-            string linea = $"{m.timestamp};{m.modelo};{m.tipo};{m.tiempoPrimerToken_ms:F0};{m.tiempoTotal_ms:F0};{m.totalTokens};{m.tokensPerSeg:F1};{m.longitudRespuesta};{m.tienePista}\n";
+            string linea = $"{m.timestamp};{m.modelo};{m.tipo};{m.tiempoPrimerToken_ms:F0};{m.tiempoTotal_ms:F0};{m.tiempoTotal_seg:F2};{m.totalTokens};{m.tokensPerSeg:F1};{m.longitudRespuesta};{m.tienePista}\n";
             File.AppendAllText(ruta, linea, Encoding.UTF8);
         }
         catch (Exception ex)

@@ -118,16 +118,17 @@ REGLAS NARRATIVAS:
 5. ACTITUD: 1 o 2 adjetivos máximo, MUY ESCUETO. ¡INVENTA UNA DIFERENTE CADA VEZ! (ej: {actitudAleatoria}).
 6. FORMATO POLICIAL: TODO debe estar en TERCERA PERSONA (él). El sospechoso es un HOMBRE. Prohibido usar 'yo' o 'tú'.
 
-REGLA CRÍTICA DE FORMATO:
-ES OBLIGATORIO usar formato XML. NO uses Markdown. NO escribas texto fuera del XML. NO renombres las etiquetas. Tienes que devolver EXACTAMENTE esta estructura:
+REGLAS CRÍTICAS (IDIOMA Y FORMATO):
+- ¡OBLIGATORIO! TODO EL TEXTO DEBE ESTAR 100% EN ESPAÑOL. Prohibido generar contenido en inglés.
+- ES OBLIGATORIO usar formato XML. NO uses Markdown. NO escribas texto fuera del XML. NO renombres las etiquetas. Tienes que devolver EXACTAMENTE esta estructura:
 
 <caso>
 <titulo>Título (máx 5 palabras)</titulo>
 <sospechoso>Nombre masculino completo inventado</sospechoso>
-<descripcion_folio>Resumen policial detallado del caso (1 párrafo largo)</descripcion_folio>
-<coartada>Su coartada detallada (1 párrafo largo)</coartada>
+<descripcion_folio>Resumen policial detallado del caso (1 párrafo largo, no te excedas de 120 palabras)</descripcion_folio>
+<coartada>Su coartada detallada (1 párrafo largo, no te excedas de 120 palabras)</coartada>
 <actitud>Adjetivos inventados, 1 o 2 máximo(ej: {actitudAleatoria})</actitud>
-<secreto>El secreto real bien detallado (1 párrafo largo)</secreto>
+<secreto>El secreto real bien detallado (1 párrafo largo y detallado)</secreto>
 </caso>";
 
         if (inteligencia == NivelInteligencia.Simple)
@@ -193,6 +194,10 @@ ES OBLIGATORIO usar formato XML. NO uses Markdown. NO escribas texto fuera del X
                     caso.EsCulpable = esCulpableRnd;
 
                     Debug.Log($"[CaseGenerator] ✅ Caso generado: {caso.TituloFolio} | Coartada: {caso.Coartada} | Culpable: {caso.EsCulpable}");
+                    
+                    // OPTIMIZACIÓN VRAM: Descargar modelo de casos antes de empezar el diálogo
+                    await DescargarModeloCasoAsync();
+                    
                     return caso;
                 }
 
@@ -202,7 +207,43 @@ ES OBLIGATORIO usar formato XML. NO uses Markdown. NO escribas texto fuera del X
         }
 
         Debug.LogWarning("[CaseGenerator] Todos los intentos fallaron. Usando fallback.");
+        await DescargarModeloCasoAsync();
         return ObtenerFallback();
+    }
+
+    private async Task DescargarModeloCasoAsync()
+    {
+        if (iaConfig == null || string.IsNullOrEmpty(iaConfig.urlModeloCasos)) return;
+
+        // Intentamos usar el endpoint de descarga de LM Studio (/v1/models/unload)
+        string unloadUrl = iaConfig.urlModeloCasos.Replace("/chat/completions", "/models/unload");
+        if (unloadUrl == iaConfig.urlModeloCasos) return; // Si no es un endpoint estándar de OpenAI, lo omitimos
+
+        var datos = new { model = iaConfig.nombreModeloCasos };
+        string jsonBody = JsonConvert.SerializeObject(datos);
+        byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonBody);
+
+        Debug.Log($"[CaseGenerator] Solicitando descarga del modelo pesado ({iaConfig.nombreModeloCasos}) de VRAM...");
+
+        using (UnityWebRequest request = new UnityWebRequest(unloadUrl, "POST"))
+        {
+            request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+            request.downloadHandler = new DownloadHandlerBuffer();
+            request.SetRequestHeader("Content-Type", "application/json");
+            request.timeout = 5; 
+            
+            var operacion = request.SendWebRequest();
+            while (!operacion.isDone) await Task.Yield();
+
+            if (request.result == UnityWebRequest.Result.Success)
+            {
+                Debug.Log("[CaseGenerator] ✅ Modelo de casos descargado de VRAM exitosamente.");
+            }
+            else
+            {
+                Debug.Log($"[CaseGenerator] Info: No se pudo forzar la descarga de VRAM (puede que el servidor no soporte el endpoint /models/unload). Error: {request.error}");
+            }
+        }
     }
 
     private async Task<string> EnviarPeticion(bool esCulpable)
@@ -283,13 +324,13 @@ ES OBLIGATORIO usar formato XML. NO uses Markdown. NO escribas texto fuera del X
 
             texto = texto.Trim();
 
-            string titulo = ExtraerValorRegex(texto, "t[ií]tulo");
-            string sospechoso = ExtraerValorRegex(texto, "sospechoso");
-            string descripcionFolio = ExtraerValorRegex(texto, "descripci[oó]n_folio");
-            string descripcionPrompt = ExtraerValorRegex(texto, "descripci[oó]n_prompt");
-            string coartada = ExtraerValorRegex(texto, "coartada");
-            string actitud = ExtraerValorRegex(texto, "actitud");
-            string secreto = ExtraerValorRegex(texto, "secreto");
+            string titulo = ExtraerValorRegex(texto, "(?:t[ií]tulo|title)");
+            string sospechoso = ExtraerValorRegex(texto, "(?:sospechoso|suspect)");
+            string descripcionFolio = ExtraerValorRegex(texto, "(?:descripci[oó]n_folio|description_folio|descripcion)");
+            string descripcionPrompt = ExtraerValorRegex(texto, "(?:descripci[oó]n_prompt|description_prompt|prompt)");
+            string coartada = ExtraerValorRegex(texto, "(?:coartada|alibi)");
+            string actitud = ExtraerValorRegex(texto, "(?:actitud|attitude)");
+            string secreto = ExtraerValorRegex(texto, "(?:secreto|secret)");
 
             if (string.IsNullOrWhiteSpace(titulo)) return null;
             if (string.IsNullOrWhiteSpace(coartada)) return null;
@@ -324,27 +365,34 @@ ES OBLIGATORIO usar formato XML. NO uses Markdown. NO escribas texto fuera del X
 
     private string ExtraerValorRegex(string texto, string etiqueta)
     {
-        // 1. Intento principal: Formato XML (El ideal y esperado)
-        var matchXml = Regex.Match(texto, $@"<{etiqueta}>(.*?)</{etiqueta}>", RegexOptions.IgnoreCase | RegexOptions.Singleline);
-        if (matchXml.Success)
+        // 1. XML estricto (Ideal)
+        var matchXml = Regex.Match(texto, $@"<\s*{etiqueta}[^>]*>(.*?)</\s*{etiqueta}\s*>", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+        if (matchXml.Success && !string.IsNullOrWhiteSpace(matchXml.Groups[1].Value))
         {
             return matchXml.Groups[1].Value.Trim(' ', '\t', '\r', '\n', '"', '\'', '*');
         }
 
-        // 2. Fallback A PRUEBA DE BALAS: Si el LLM ignora el XML y usa Markdown (ej. "**etiqueta:** valor")
-        string patronMarkdown = $@"\*\*{etiqueta}[^\*]*\*\*:?\s*(.*?)(?=\*\*|$)";
-        var matchMd = Regex.Match(texto, patronMarkdown, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-        if (matchMd.Success)
+        // 2. XML Truncado (Falta el cierre, captura hasta la siguiente etiqueta o fin)
+        var matchXmlTruncado = Regex.Match(texto, $@"<\s*{etiqueta}[^>]*>(.*?)(?:<\s*/?[a-zA-Z_]+>|$)", RegexOptions.IgnoreCase | RegexOptions.Singleline);
+        if (matchXmlTruncado.Success && !string.IsNullOrWhiteSpace(matchXmlTruncado.Groups[1].Value))
         {
-            return matchMd.Groups[1].Value.Trim(' ', '\t', '\r', '\n', '"', '\'', '*');
+            return matchXmlTruncado.Groups[1].Value.Trim(' ', '\t', '\r', '\n', '"', '\'', '*', '<', '/');
         }
 
-        // 3. Fallback extremo: Si lo pone en texto plano (ej. "etiqueta: valor")
-        string patronPlano = $@"(?im)^{etiqueta}[^:]*:\s*(.*?)(?=\n[A-Z_]+:|$)";
+        // 3. Markdown o Texto Plano (ej. "**etiqueta**: valor" o "etiqueta: valor")
+        string patronPlano = $@"(?:^|\n)\s*\**{etiqueta}\**\s*:\s*(.*?)(?=\n\s*\**[a-zA-Z_]+\**\s*:|$)";
         var matchPlano = Regex.Match(texto, patronPlano, RegexOptions.IgnoreCase | RegexOptions.Singleline);
-        if (matchPlano.Success)
+        if (matchPlano.Success && !string.IsNullOrWhiteSpace(matchPlano.Groups[1].Value))
         {
             return matchPlano.Groups[1].Value.Trim(' ', '\t', '\r', '\n', '"', '\'', '*');
+        }
+
+        // 4. JSON Fallback por si la IA decide ignorar el XML (ej. "etiqueta": "valor")
+        string patronJson = $@"""{etiqueta}""\s*:\s*""?(.*?)(?:""|,)";
+        var matchJson = Regex.Match(texto, patronJson, RegexOptions.IgnoreCase | RegexOptions.Singleline);
+        if (matchJson.Success && !string.IsNullOrWhiteSpace(matchJson.Groups[1].Value))
+        {
+            return matchJson.Groups[1].Value.Trim(' ', '\t', '\r', '\n', '"', '\'', '*');
         }
 
         return string.Empty;
