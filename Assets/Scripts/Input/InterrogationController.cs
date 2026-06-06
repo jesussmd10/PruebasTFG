@@ -210,6 +210,11 @@ public class InterrogationController : MonoBehaviour
         if (!grabando) return;
         grabando = false;
         
+        // --- MÉTRICAS: E2E LATENCY START ---
+        // El usuario suelta el botón. Aquí empieza el ciclo real que experimenta el jugador.
+        if (LatencyMetrics.Instance != null)
+            LatencyMetrics.Instance.MarcarFinGrabacionMicrofono();
+
         StartCoroutine(ProcesarCierreGrabacion());
     }
 
@@ -276,7 +281,16 @@ public class InterrogationController : MonoBehaviour
 
     private async void ProcesarAudio(AudioClip clip, bool estaGritando)
     {
+        // --- MÉTRICAS: STT START ---
+        if (LatencyMetrics.Instance != null)
+            LatencyMetrics.Instance.IniciarMedicionSTT();
+
         var resultado = await whisper.GetTextAsync(clip);
+
+        // --- MÉTRICAS: STT END ---
+        if (LatencyMetrics.Instance != null)
+            LatencyMetrics.Instance.FinalizarMedicionSTT();
+
         Debug.Log($"Transcrito: {resultado.Result}");
 
         // Enviar evento para que otros sistemas lo procesen

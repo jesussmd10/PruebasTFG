@@ -107,28 +107,31 @@ public class CaseGenerator : MonoBehaviour
         };
         string actitudAleatoria = ejemplosActitud[Random.Range(0, ejemplosActitud.Length)];
 
-        string prompt = $@"Crea un detallado expediente de detectives [ID: {System.Guid.NewGuid()}].
-SOSPECHOSO: {estadoCulpa}. TEMA: ""{temaEscogido}""
+        string prompt = $@"Eres una IA generadora de expedientes policiales. Tu ÚNICA tarea es rellenar la plantilla XML con los datos del caso basándote en los parámetros.
+NO REPITAS LAS INSTRUCCIONES. NO GENERES DIÁLOGO.
 
-REGLAS NARRATIVAS:
+### PARÁMETROS DEL CASO ###
+- SOSPECHOSO: {estadoCulpa}. 
+- TEMA DEL CRIMEN: ""{temaEscogido}""
+
+### REGLAS NARRATIVAS ###
 1. CRIMEN: Delito original y muy descriptivo basado en el TEMA.
 2. COARTADA: Actividad falsa pero detallada cerca de la escena. DEBE estar 100% relacionada lógicamente con el entorno del caso.
-{reglaSecreto}
-4. HILO CONDUCTOR: Conecta el crimen, la coartada y el secreto usando un objeto específico, un testigo o un lugar muy concreto para darle realismo y cohesión.
-5. ACTITUD: 1 o 2 adjetivos máximo, MUY ESCUETO. ¡INVENTA UNA DIFERENTE CADA VEZ! (ej: {actitudAleatoria}).
-6. FORMATO POLICIAL: TODO debe estar en TERCERA PERSONA (él). El sospechoso es un HOMBRE. Prohibido usar 'yo' o 'tú'.
+3. SECRETO: {reglaSecreto}
+4. ACTITUD: 1 o 2 adjetivos (ej: {actitudAleatoria}).
+5. FORMATO POLICIAL: TODO debe estar redactado de forma puramente objetiva, como un informe policial (en tercera persona). El sospechoso es un HOMBRE. PROHIBIDO usar 'yo' o 'tú' en los párrafos.
 
-REGLAS CRÍTICAS (IDIOMA Y FORMATO):
-- ¡OBLIGATORIO! TODO EL TEXTO DEBE ESTAR 100% EN ESPAÑOL. Prohibido generar contenido en inglés.
-- ES OBLIGATORIO usar formato XML. NO uses Markdown. NO escribas texto fuera del XML. NO renombres las etiquetas. Tienes que devolver EXACTAMENTE esta estructura:
+### REGLAS DE FORMATO (CRÍTICO) ###
+- TODO EL TEXTO DEBE ESTAR 100% EN ESPAÑOL.
+- Tienes que devolver EXACTAMENTE esta estructura XML rellenada, sin añadir texto antes ni después:
 
 <caso>
 <titulo>Título (máx 5 palabras)</titulo>
 <sospechoso>Nombre masculino completo inventado</sospechoso>
-<descripcion_folio>Resumen policial detallado del caso (1 párrafo largo, no te excedas de 120 palabras)</descripcion_folio>
-<coartada>Su coartada detallada (1 párrafo largo, no te excedas de 120 palabras)</coartada>
-<actitud>Adjetivos inventados, 1 o 2 máximo(ej: {actitudAleatoria})</actitud>
-<secreto>El secreto real bien detallado (1 párrafo largo y detallado)</secreto>
+<descripcion_folio>Resumen policial detallado del caso redactado en tercera persona (1 párrafo largo, máx 120 palabras)</descripcion_folio>
+<coartada>Su coartada redactada de forma objetiva en tercera persona (1 párrafo largo, máx 120 palabras)</coartada>
+<actitud>Adjetivos inventados, 1 o 2 máximo</actitud>
+<secreto>El secreto real redactado en tercera persona (1 párrafo)</secreto>
 </caso>";
 
         if (inteligencia == NivelInteligencia.Simple)
@@ -172,6 +175,8 @@ REGLAS CRÍTICAS (IDIOMA Y FORMATO):
         }
     }
 
+    private int ultimoTokensCaso = 0;
+
     private async Task<GameContext.CasoDelito> GenerarCasoInternoAsync()
     {
         if (iaConfig == null) return ObtenerFallback();
@@ -188,7 +193,12 @@ REGLAS CRÍTICAS (IDIOMA Y FORMATO):
             {
                 Debug.Log($"[CaseGenerator] Respuesta cruda del LLM:\n{respuesta}");
 
+                bool xmlPerfecto = respuesta.Contains("<caso>") && respuesta.Contains("</caso>");
                 var caso = ValidarYParsear(respuesta);
+                
+                if (LatencyMetrics.Instance != null)
+                    LatencyMetrics.Instance.FinalizarMedicion(respuesta, false, xmlPerfecto, ultimoTokensCaso);
+
                 if (caso != null)
                 {
                     caso.EsCulpable = esCulpableRnd;
@@ -215,35 +225,62 @@ REGLAS CRÍTICAS (IDIOMA Y FORMATO):
     {
         if (iaConfig == null || string.IsNullOrEmpty(iaConfig.urlModeloCasos)) return;
 
-        // Intentamos usar el endpoint de descarga de LM Studio (/v1/models/unload)
-        string unloadUrl = iaConfig.urlModeloCasos.Replace("/chat/completions", "/models/unload");
-        if (unloadUrl == iaConfig.urlModeloCasos) return; // Si no es un endpoint estándar de OpenAI, lo omitimos
-
-        var datos = new { model = iaConfig.nombreModeloCasos };
-        string jsonBody = JsonConvert.SerializeObject(datos);
-        byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonBody);
+        string baseUri = iaConfig.urlModeloCasos.Replace("/v1/chat/completions", "").Replace("/chat/completions", "");
+        string getModelsUrl = baseUri + "/v1/models";
 
         Debug.Log($"[CaseGenerator] Solicitando descarga del modelo pesado ({iaConfig.nombreModeloCasos}) de VRAM...");
 
-        using (UnityWebRequest request = new UnityWebRequest(unloadUrl, "POST"))
+        // 1. Intentar el endpoint nativo de LM Studio (v1 API) usando 'model'
+        bool exito = await IntentarDescarga(baseUri + "/api/v1/models/unload", new { model = iaConfig.nombreModeloCasos });
+        
+        // 2. Si falla, intentar el mismo endpoint pero usando 'instance_id' (requerido en versiones recientes)
+        if (!exito)
+        {
+            exito = await IntentarDescarga(baseUri + "/api/v1/models/unload", new { instance_id = iaConfig.nombreModeloCasos });
+        }
+
+        // 3. Si falla, usar el endpoint clásico de compatibilidad OpenAI
+        if (!exito)
+        {
+            exito = await IntentarDescarga(baseUri + "/v1/models/unload", new { model = iaConfig.nombreModeloCasos });
+        }
+
+        if (exito)
+        {
+            Debug.Log("[CaseGenerator] ✅ Petición de descarga aceptada por el servidor. Esperando 3 segundos para limpieza física de GPU...");
+            await Task.Delay(3000);
+        }
+        else
+        {
+            Debug.LogWarning("[CaseGenerator] ❌ No se pudo forzar la descarga en LM Studio a través de ninguna API. Puede que tengas que expulsarlo a mano ('Eject') o usar un TTL corto.");
+        }
+    }
+
+    private async Task<bool> IntentarDescarga(string url, object payload)
+    {
+        string jsonBody = JsonConvert.SerializeObject(payload);
+        byte[] bodyRaw = Encoding.UTF8.GetBytes(jsonBody);
+
+        using (UnityWebRequest request = new UnityWebRequest(url, "POST"))
         {
             request.uploadHandler = new UploadHandlerRaw(bodyRaw);
             request.downloadHandler = new DownloadHandlerBuffer();
             request.SetRequestHeader("Content-Type", "application/json");
-            request.timeout = 5; 
+            request.timeout = 3; 
             
             var operacion = request.SendWebRequest();
             while (!operacion.isDone) await Task.Yield();
 
             if (request.result == UnityWebRequest.Result.Success)
             {
-                Debug.Log("[CaseGenerator] ✅ Modelo de casos descargado de VRAM exitosamente.");
-            }
-            else
-            {
-                Debug.Log($"[CaseGenerator] Info: No se pudo forzar la descarga de VRAM (puede que el servidor no soporte el endpoint /models/unload). Error: {request.error}");
+                // LM Studio a veces devuelve 200 OK pero manda un JSON {"success": true/false} o similar
+                string res = request.downloadHandler.text;
+                if (!string.IsNullOrEmpty(res) && res.Contains("\"error\"")) return false;
+                
+                return true; 
             }
         }
+        return false;
     }
 
     private async Task<string> EnviarPeticion(bool esCulpable)
@@ -297,8 +334,7 @@ REGLAS CRÍTICAS (IDIOMA Y FORMATO):
 
                     Debug.Log($"<color=cyan>[METRICAS LLM]</color> Caso generado en {timeTaken:F2} segundos. | Tokens: {promptTokens} prompt + {completionTokens} generados = {totalTokens} total.");
 
-                    if (LatencyMetrics.Instance != null)
-                        LatencyMetrics.Instance.FinalizarMedicion(respuesta.choices[0].message.content, false, totalTokens);
+                    ultimoTokensCaso = totalTokens;
 
                     return respuesta.choices[0].message.content;
                 }

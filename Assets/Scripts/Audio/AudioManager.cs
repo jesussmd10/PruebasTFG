@@ -98,7 +98,13 @@ public class AudioManager : MonoBehaviour
         { 
             fraseOriginal = frase, 
             emocion = emocion 
-        });// Iniciar la descarga en segundo plano si no está activa
+        });
+        
+        // --- MÉTRICAS: TTS START ---
+        if (LatencyMetrics.Instance != null)
+            LatencyMetrics.Instance.MarcarInicioGeneracionTTS();
+
+        // Iniciar la descarga en segundo plano si no está activa
         if (!generandoEnFondo)
         {
             StartCoroutine(PreDescargarClipsLoop());
@@ -215,6 +221,11 @@ public class AudioManager : MonoBehaviour
         if (audioSource.clip != null) Destroy(audioSource.clip);
         audioSource.clip = clipListo.clip;
         audioSource.Play();
+
+        // --- MÉTRICAS: E2E LATENCY END ---
+        // ¡El jugador acaba de escuchar la primera letra de la respuesta!
+        if (LatencyMetrics.Instance != null)
+            LatencyMetrics.Instance.MarcarInicioReproduccionAudio();
 
         UnityEngine.Debug.Log($"[AudioPlayback] Reproduciendo: '{clipListo.fraseOriginal.Substring(0, Mathf.Min(35, clipListo.fraseOriginal.Length))}...' con emoción: {clipListo.emocion}");
 

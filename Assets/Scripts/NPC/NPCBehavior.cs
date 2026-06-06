@@ -37,9 +37,9 @@ public class NPCBehavior : MonoBehaviour
 
         string textoLimpio = textoCompleto;
 
-        // 1. Eliminar los metadatos [PISTA: ...] y [ANIMACION: ...]
-        textoLimpio = Regex.Replace(textoLimpio, @"\[PISTA:.*?\]", "", RegexOptions.Singleline | RegexOptions.IgnoreCase);
-        textoLimpio = Regex.Replace(textoLimpio, @"\[ANIMACION:.*?\]", "", RegexOptions.Singleline | RegexOptions.IgnoreCase);
+        // 1. Eliminar los metadatos [PISTA: ...] y [ANIMACION: ...] (incluso si la IA olvidó cerrarlos al final del texto)
+        textoLimpio = Regex.Replace(textoLimpio, @"\[PISTA:.*?(?:\]|$)", "", RegexOptions.Singleline | RegexOptions.IgnoreCase);
+        textoLimpio = Regex.Replace(textoLimpio, @"\[ANIMACION:.*?(?:\]|$)", "", RegexOptions.Singleline | RegexOptions.IgnoreCase);
 
         // 1.1 Eliminar cualquier otra etiqueta XML residual
         textoLimpio = Regex.Replace(textoLimpio, @"<.*?>", "", RegexOptions.Singleline);

@@ -113,8 +113,8 @@ public class InterrogationManager : MonoBehaviour
             textoFolioVR.isRightToLeftText = false;
             textoFolioVR.alignment = TMPro.TextAlignmentOptions.TopLeft;
             
-            // Forzar que el texto SIEMPRE se dibuje, incluso si el recuadro es super pequeño
-            textoFolioVR.overflowMode = TMPro.TextOverflowModes.Overflow;
+            // Forzar que el texto no se salga de los límites físicos del papel VR
+            textoFolioVR.overflowMode = TMPro.TextOverflowModes.Truncate;
             textoFolioVR.textWrappingMode = TMPro.TextWrappingModes.Normal;
             
             // Quitar márgenes raros que pudieran estar empujando el texto fuera
@@ -124,7 +124,7 @@ public class InterrogationManager : MonoBehaviour
             textoFolioVR.color = UnityEngine.Color.black;
             
             textoFolioVR.enableAutoSizing = true;
-            textoFolioVR.fontSizeMin = 10;
+            textoFolioVR.fontSizeMin = 8;
             textoFolioVR.fontSizeMax = 50;
 
             Canvas canvas = textoFolioVR.GetComponentInParent<Canvas>();
@@ -154,6 +154,14 @@ public class InterrogationManager : MonoBehaviour
             if (caseGenerator != null)
             {
                 caso = await caseGenerator.GenerarCasoAsync();
+                
+                // CRUCIAL: Justo después de generar el caso (lo que descarga el modelo pesado de la VRAM),
+                // mandamos cargar obligatoriamente el modelo de diálogo en segundo plano para que el
+                // interrogatorio empiece rápido y sin lagazos en la primera pregunta.
+                if (dialogueSystem != null)
+                {
+                    _ = dialogueSystem.PrecargarModeloDialogoAsync();
+                }
             }
             else
             {
@@ -265,24 +273,43 @@ public class InterrogationManager : MonoBehaviour
             // Log de la respuesta completa de la IA para depuración
             Debug.Log($"Respuesta IA completa: '{respuestaIA}'");
 
-            // Detectar y procesar pista dinámica con el nuevo formato [PISTA: ...]
-            string patronPista = @"\[PISTA:\s*(.*?)\]";
+            // Detectar y procesar pista dinámica (lee el tipo de pista y permite alucinaciones leves o formato Markdown de modelos rebeldes)
+            string patronPista = @"(?i)(?:\[|\*|_)*PISTA[:\*\]\s]*(COARTADA|SECRETO|CONTRADICCION|CONTRADICCIÓN)";
             var matchPista = System.Text.RegularExpressions.Regex.Match(respuestaIA, patronPista, System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.Singleline);
             
             if (matchPista.Success)
             {
-                Debug.Log("¡PISTA DETECTADA en la respuesta!");
+                Debug.Log("¡PISTA DETECTADA en la respuesta! Inyectando texto categorizado...");
                 
-                string descripcionPista = matchPista.Groups[1].Value.Trim();
-                if (string.IsNullOrEmpty(descripcionPista) || descripcionPista.Length < 3)
+                string tipoPista = matchPista.Groups[1].Value.Trim().ToUpper();
+                var casoActual = GameContext.Instance.DelitoActual;
+                string descripcionPista = "El sospechoso se ha puesto nervioso y ha cometido un error.";
+                
+                if (casoActual != null)
                 {
-                    descripcionPista = "El sospechoso se ha contradicho o reveló un dato clave.";
+                    if (tipoPista.Contains("COARTADA"))
+                    {
+                        descripcionPista = "La coartada del sospechoso presenta lagunas o elementos incoherentes.";
+                    }
+                    else if (tipoPista.Contains("SECRETO"))
+                    {
+                        descripcionPista = "El sospechoso se ha puesto nervioso y ha revelado detalles sobre su secreto oculto.";
+                    }
+                    else if (tipoPista.Contains("CONTRADICCION") || tipoPista.Contains("CONTRADICCIÓN"))
+                    {
+                        descripcionPista = "El sospechoso acaba de contradecirse gravemente respecto a su versión inicial.";
+                    }
+                    else 
+                    {
+                        // Fallback por si el LLM inventa una categoría nueva o escribe un texto normal
+                        descripcionPista = "El sospechoso ha cometido un error verbal bajo presión.";
+                    }
                 }
                 
                 GameContext.Instance.AñadirPista(descripcionPista);
                 
-                // Eliminar el tag de la respuesta para que no se escuche en TTS
-                respuestaIA = System.Text.RegularExpressions.Regex.Replace(respuestaIA, patronPista, "", System.Text.RegularExpressions.RegexOptions.IgnoreCase).Trim();
+                // Eliminar el tag (y cualquier basura interior) para que quede limpio en los logs y eventos UI
+                respuestaIA = System.Text.RegularExpressions.Regex.Replace(respuestaIA, @"(?i)(?:\[|\*|_)*PISTA[:\*\]\s]*(COARTADA|SECRETO|CONTRADICCION|CONTRADICCIÓN).*", "", System.Text.RegularExpressions.RegexOptions.IgnoreCase).Trim();
             }
             else
             {
@@ -419,10 +446,17 @@ public class InterrogationManager : MonoBehaviour
             textoResultadoVeredicto.text += "\n\n" + resumen;
         }
 
-        // Generar el próximo caso en segundo plano
+        // Generar el próximo caso en segundo plano y preparar IA
         if (caseGenerator != null)
         {
             GameContext.CasoPrecargado = await caseGenerator.GenerarCasoAsync();
+            
+            // Ya se ha generado el caso y se ha vaciado el modelo de casos de VRAM.
+            // Ahora cargamos el modelo de diálogo en la VRAM ANTES de mostrar el botón de reiniciar.
+            if (dialogueSystem != null)
+            {
+                await dialogueSystem.PrecargarModeloDialogoAsync();
+            }
         }
 
         // Activar el botón de reinicio y actualizar texto

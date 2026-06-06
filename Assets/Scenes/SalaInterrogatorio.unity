@@ -1957,7 +1957,7 @@ MonoBehaviour:
   laughterBlendTarget: 15
   laughterThreshold: 0.5
   laughterMultiplier: 1.5
-  smoothAmount: 70
+  smoothAmount: 15
 --- !u!114 &328002615
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1971,7 +1971,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Oculus.LipSync::OVRLipSyncContext
   audioSource: {fileID: 328002613}
-  provider: 1
+  provider: 0
   enableAcceleration: 1
   enableKeyboardInput: 0
   enableTouchInput: 0
@@ -3478,7 +3478,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2774220344278030320, guid: 1f6d989c51946614595a3f3d806a8138, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -12.12907
+      value: -12.3
       objectReference: {fileID: 0}
     - target: {fileID: 2774220344278030320, guid: 1f6d989c51946614595a3f3d806a8138, type: 3}
       propertyPath: m_LocalRotation.w
@@ -6476,13 +6476,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1168030754}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.58864504, y: 0.018208163, z: -0.0057941945, w: 0.80816585}
+  m_LocalRotation: {x: 0.6108248, y: -0.031753693, z: 0.09379508, w: 0.78554904}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 6664732990780711219}
-  m_LocalEulerAnglesHint: {x: 72.112, y: 4.221, z: 2.252}
+  m_LocalEulerAnglesHint: {x: 74.933, y: 14.411, z: 24.687}
 --- !u!114 &1168030756
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6523,10 +6523,10 @@ Light:
   serializedVersion: 11
   m_Type: 0
   m_Color: {r: 1, g: 1, b: 1, a: 1}
-  m_Intensity: 200
+  m_Intensity: 100
   m_Range: 20
-  m_SpotAngle: 69.49411
-  m_InnerSpotAngle: 15.794128
+  m_SpotAngle: 87.3941
+  m_InnerSpotAngle: 26.32354
   m_CookieSize: 10
   m_Shadows:
     m_Type: 0
@@ -6562,7 +6562,7 @@ Light:
     serializedVersion: 2
     m_Bits: 4294967295
   m_RenderingLayerMask: 1
-  m_Lightmapping: 4
+  m_Lightmapping: 2
   m_LightShadowCasterMode: 0
   m_AreaSize: {x: 1, y: 1}
   m_BounceIntensity: 1
@@ -15594,13 +15594,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8465548113063427991}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: 0.01879784, y: -0.38531676, z: 0.090985335, w: 0.91809547}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2142179125403112121}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 6.006, y: -45.071, z: 8.825}
 --- !u!1 &5015099169850111799
 GameObject:
   m_ObjectHideFlags: 0
