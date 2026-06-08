@@ -3867,6 +3867,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 1102801288}
+  - {fileID: 1044933246}
   m_Father: {fileID: 7306415716672615924}
   m_LocalEulerAnglesHint: {x: 0, y: 269.178, z: 0}
 --- !u!1 &744461727
@@ -5580,6 +5581,118 @@ Transform:
   m_Children: []
   m_Father: {fileID: 310452499}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1044933245
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1044933246}
+  - component: {fileID: 1044933249}
+  - component: {fileID: 1044933248}
+  - component: {fileID: 1044933247}
+  m_Layer: 0
+  m_Name: Quad
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1044933246
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1044933245}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0.7071063, y: -0.0000011324881, z: 0.00000077546514, w: -0.70710737}
+  m_LocalPosition: {x: 0, y: 0.54, z: 0.414}
+  m_LocalScale: {x: 0.8, y: 0.16, z: 0.2}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 737076405}
+  m_LocalEulerAnglesHint: {x: 90, y: 0, z: 360}
+--- !u!64 &1044933247
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1044933245}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 5
+  m_Convex: 0
+  m_CookingOptions: 30
+  m_Mesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!23 &1044933248
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1044933245}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 935d29266fbceb241a942b87283ec4d4, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!33 &1044933249
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1044933245}
+  m_Mesh: {fileID: 10210, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!1 &1054301619
 GameObject:
   m_ObjectHideFlags: 0
@@ -8339,7 +8452,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8e2f5a2de91bebd47aa7a338d79c5e2c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CaseGenerator
-  iaConfig: {fileID: 11400000, guid: 25ac357765594f64c9588683591a320c, type: 2}
+  iaConfig: {fileID: 11400000, guid: 56dfc85192876ea45aad51f11622dd89, type: 2}
 --- !u!1 &1450570020
 GameObject:
   m_ObjectHideFlags: 0
@@ -9230,7 +9343,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0dc981cef29c33b4297f65f552b17dd1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::DialogueSystem
-  iaConfig: {fileID: 11400000, guid: 25ac357765594f64c9588683591a320c, type: 2}
+  iaConfig: {fileID: 11400000, guid: 56dfc85192876ea45aad51f11622dd89, type: 2}
 --- !u!4 &1545844461
 Transform:
   m_ObjectHideFlags: 0
@@ -9276,7 +9389,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::AudioManager
   audioSource: {fileID: 328002613}
-  iaConfig: {fileID: 11400000, guid: 25ac357765594f64c9588683591a320c, type: 2}
+  iaConfig: {fileID: 11400000, guid: 56dfc85192876ea45aad51f11622dd89, type: 2}
   nombreVoz: es-ES-AlvaroNeural
 --- !u!4 &1548482858
 Transform:

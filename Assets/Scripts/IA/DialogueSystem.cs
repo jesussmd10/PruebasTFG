@@ -40,7 +40,7 @@ public class DialogueSystem : MonoBehaviour
     }
 
     /// <summary>
-    /// Indica si el sistema de streaming está activo (para que otros scripts sepan).
+    /// Indica si el sistema de streaming está activo.
     /// </summary>
     public bool UsaStreaming => iaConfig != null && iaConfig.usarStreaming;
 
@@ -48,7 +48,6 @@ public class DialogueSystem : MonoBehaviour
     private static readonly HttpClient httpClient = new HttpClient() { Timeout = TimeSpan.FromSeconds(30) };
 
     // Colas thread-safe para pasar datos del hilo de fondo al hilo principal de Unity
-    // Esto evita el "reloj" de bloqueo en VR
     private readonly ConcurrentQueue<(string frase, EmotionState emocion)> colaFrasesParaTTS = new ConcurrentQueue<(string, EmotionState)>();
 
     private void Start()
@@ -226,7 +225,7 @@ Vale, es cierto, no estaba allí... ¡Pero yo no tenía ningún cuchillo, joder!
         historialDialogo.Clear();
         historialDialogo.Add(new { role = "system", content = prompt });
 
-        // PRE-SEED: Anclar al modelo (Evitamos usar "¡Atención!" para que la IA no copie la forma de hablar del usuario)
+        // PRE-SEED: Anclar al modelo
         historialDialogo.Add(new { role = "user", content = "Siéntate. Soy el detective a cargo de este caso. Te voy a hacer unas cuantas preguntas y quiero que me digas la verdad." });
         historialDialogo.Add(new { role = "assistant", content = $"Yo soy {caso.Sospechoso}. Yo no sé de qué me estás hablando. Soy completamente inocente y no he hecho nada malo. Pregunta lo que te dé la gana, no te tengo miedo. [ANIMACION: CALMADO]" });
 

@@ -123,7 +123,6 @@ public class LatencyMetrics : MonoBehaviour
             string linea = $"{DateTime.Now:yyyy-MM-dd HH:mm:ss};{ultimoSTT_ms:F0};{tiempoPrimerToken:F0};{ultimoTTS_ms:F0};{ultimoE2E_ms:F0};;\n";
             File.AppendAllText(rutaCSV_E2E, linea, Encoding.UTF8);
             
-            Debug.Log($"[Métricas E2E] Pipeline Registrado -> STT: {ultimoSTT_ms:F0}ms | LLM_1er: {tiempoPrimerToken:F0}ms | TTS: {ultimoTTS_ms:F0}ms | TOTAL: {ultimoE2E_ms:F0}ms");
             
             // Reset for next turn
             ultimoSTT_ms = 0f;
@@ -205,7 +204,7 @@ public class LatencyMetrics : MonoBehaviour
         sesionActual.Add(metrica);
         GuardarMetricaCSV(metrica);
 
-        Debug.Log($"[Métricas LLM] {modeloActual} ({tipoActual}) | 1er token: {tiempoPrimerToken:F0}ms | Total: {tiempoTotal:F0}ms | {tokensContados} tokens | Éxito Formato: {exitoFormato}");
+        
     }
 
     private void GuardarMetricaCSV(MetricaRespuesta m)

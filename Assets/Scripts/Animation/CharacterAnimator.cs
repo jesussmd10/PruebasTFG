@@ -43,14 +43,13 @@ public class CharacterAnimator : MonoBehaviour
                     // respetar la animación base/nerviosa por defecto en lugar de cortarla.
                     if (estadoActual == EmotionState.Hablando)
                     {
-                        // Transición suave de 0.25s a la animación base de la capa 1
+                        // Transición suave a la animación base de la capa 1
                         animador.CrossFade("Quieto", 0.1f, 1);
                     }
                     animador.SetTrigger("IDLE"); // Mantenemos el trigger por si otras capas lo necesitan
                     break;
                 case EmotionState.Negando:
                     animador.SetTrigger("NEGACION");
-                    Debug.Log("Alex niega con el dedo/cabeza y se prepara para hablar");
                     break;
             }
         }

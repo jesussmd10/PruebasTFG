@@ -36,7 +36,6 @@ public class InterrogationController : MonoBehaviour
         {
             umbralGrito = PlayerPrefs.GetFloat("UmbralGritoGuardado");
             multiplicadorGanancia = PlayerPrefs.GetFloat("GananciaGuardada");
-            Debug.Log($"<color=green>[Calibración de Micrófono]</color> Aplicando ajustes del menú principal: Umbral={umbralGrito}, Ganancia={multiplicadorGanancia}");
         }
     }
 
@@ -104,7 +103,6 @@ public class InterrogationController : MonoBehaviour
 
     private void InicializarMicrófono()
     {
-        Debug.Log("Micrófonos disponibles (" + Microphone.devices.Length + "):");
         for (int i = 0; i < Microphone.devices.Length; i++)
         {
             Debug.Log($"   [{i}] \"{Microphone.devices[i]}\"");
@@ -143,7 +141,6 @@ public class InterrogationController : MonoBehaviour
                 if (device.IndexOf(palabraClave, System.StringComparison.OrdinalIgnoreCase) >= 0)
                 {
                     microfonoActual = device;
-                    Debug.Log("Micrófono VR encontrado: " + microfonoActual);
                     return true;
                 }
             }
@@ -163,9 +160,7 @@ public class InterrogationController : MonoBehaviour
             if (BuscarMicrofonoVR())
             {
                 microfonoVREncontrado = true;
-                Debug.Log("Micrófono VR detectado tras reintento: " + microfonoActual);
 
-                // Detener la grabación anterior y reiniciar con el micrófono VR
                 if (Microphone.IsRecording(null))
                 {
                     Microphone.End(null);
@@ -183,8 +178,6 @@ public class InterrogationController : MonoBehaviour
             return;
         }
 
-        Debug.Log("Micrófono activo: " + microfonoActual);
-
         // Grabar continuamente
         clipGrabado = Microphone.Start(microfonoActual, true, 3599, 16000);
     }
@@ -193,10 +186,8 @@ public class InterrogationController : MonoBehaviour
     {
         if (grabando) return;
         
-        // --- FIX: Si algún otro script (como el Menú) apagó el micrófono, lo reiniciamos aquí ---
         if (!string.IsNullOrEmpty(microfonoActual) && !Microphone.IsRecording(microfonoActual))
         {
-            Debug.LogWarning("El micrófono estaba apagado. Reiniciando grabación para Whisper...");
             IniciarGrabacion();
         }
 
@@ -250,11 +241,8 @@ public class InterrogationController : MonoBehaviour
             if (Mathf.Abs(muestrasRecortadas[i]) > maxVal) maxVal = Mathf.Abs(muestrasRecortadas[i]);
         }
 
-        Debug.Log($"<color=cyan>[Micrófono]</color> Volumen RMS: {volumenDetectado:F4} | Pico Máximo: {maxVal:F4} | Gritando: {estaGritando} (Umbral: {umbralGrito:F4})");
-
         if (volumenDetectado < umbralSilencio)
         {
-            Debug.LogWarning($"<color=orange>[Whisper Ignorado]</color> El audio ({volumenDetectado:F4}) era puro silencio o ruido de fondo. Ajusta 'Umbral Silencio' en el inspector si tu voz no entra.");
             yield break;
         }
 

@@ -17,7 +17,6 @@ public class NPCMovement : MonoBehaviour
     private bool yaSeHaSentado = false;
     public bool YaEstaSentado => yaSeHaSentado;
 
-    // ---> NUEVO: Creamos esta variable para que la IA sepa que estamos aparcando <---
     public bool EstaLlegando { get; private set; } = false;
 
     private Vector3 posicionInicial;
@@ -84,10 +83,9 @@ public class NPCMovement : MonoBehaviour
         
         float distancia = Vector3.Distance(posicionPlanaNPC, posicionPlanaSilla);
 
-        // ---> AQUÍ LO PONES: Justo después de saber a qué distancia estamos <---
         if (distancia < 1.5f)
         {
-            EstaLlegando = true; // Avisamos de que estamos a menos de 1.5m
+            EstaLlegando = true;
         }
 
         if (distancia > distanciaMinima)
@@ -142,6 +140,5 @@ public class NPCMovement : MonoBehaviour
             characterAnimator.Sentarse();
         }
 
-        Debug.Log("Llegué. Me siento.");
     }
 }

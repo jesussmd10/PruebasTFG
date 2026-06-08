@@ -68,7 +68,7 @@ public class AudioManager : MonoBehaviour
         if (audioSource != null)
         {
             if (audioSource.isPlaying) audioSource.Stop();
-            audioSource.clip = null; // CRÍTICO: Evita que PlayOnAwake reproduzca el último clip al reiniciar el NPC
+            audioSource.clip = null; // Evita que PlayOnAwake reproduzca el último clip al reiniciar el NPC
         }
         
         reproduciendoCola = false;
@@ -81,8 +81,6 @@ public class AudioManager : MonoBehaviour
         {
             StartCoroutine(BuscarEdgeTTS());
         }
-
-        UnityEngine.Debug.Log("[AudioManager] Colas de TTS limpiadas y audio detenido.");
     }
 
     /// <summary>
@@ -170,11 +168,6 @@ public class AudioManager : MonoBehaviour
                     emocion = emocion,
                     fraseOriginal = fraseOriginal
                 });
-                UnityEngine.Debug.Log($"[AudioQueue] Clip pre-descargado y encolado listo. (Clips listos en caché: {colaClipsListos.Count})");
-            }
-            else
-            {
-                UnityEngine.Debug.LogWarning($"[AudioQueue] Falló la descarga del clip para: '{fraseLimpia}'");
             }
         }
 
@@ -223,7 +216,6 @@ public class AudioManager : MonoBehaviour
         audioSource.Play();
 
         // --- MÉTRICAS: E2E LATENCY END ---
-        // ¡El jugador acaba de escuchar la primera letra de la respuesta!
         if (LatencyMetrics.Instance != null)
             LatencyMetrics.Instance.MarcarInicioReproduccionAudio();
 
@@ -578,8 +570,4 @@ public class AudioManager : MonoBehaviour
             }
         }
     }
-
-    // El método DetectarEmocionEnTexto ha sido eliminado. 
-    // Ahora la emoción se detecta en vivo desde el streaming XML del LLM en DialogueSystem.cs 
-    // y se pasa directamente al EncolarFrase.
 }

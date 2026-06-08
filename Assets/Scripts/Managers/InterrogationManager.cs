@@ -101,7 +101,6 @@ public class InterrogationManager : MonoBehaviour
                     if (nm.Contains("reinici") || nm.Contains("restart") || nm.Contains("volver"))
                     {
                         botonReinicio = b.gameObject;
-                        Debug.Log("✅ Botón de reinicio auto-encontrado: " + b.gameObject.name);
                         break;
                     }
                 }
@@ -475,7 +474,7 @@ public class InterrogationManager : MonoBehaviour
 
     public void ReiniciarInterrogatorio()
     {
-        Debug.Log("Iniciando siguiente interrogatorio en Single-Scene...");
+        
         
         System.GC.Collect();
 
